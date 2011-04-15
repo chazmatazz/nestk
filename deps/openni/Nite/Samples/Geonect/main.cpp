@@ -23,34 +23,120 @@
 #include <XnHash.h>
 #include <XnLog.h>
 
+#include <XnVHandPointContext.h>
+#include <XnVSessionManager.h>
+#include <XnVFlowRouter.h>
+#include <XnVSwipeDetector.h>
+#include <XnVSelectableSlider1D.h>
+#include <XnVSteadyDetector.h>
+#include <XnVBroadcaster.h>
+#include <XnVPushDetector.h>
+
 // Header for NITE
 #include "XnVNite.h"
 // local header
 #include "PointDrawer.h"
 
 #define CHECK_RC(rc, what)											\
-	if (rc != XN_STATUS_OK)											\
-	{																\
-		printf("%s failed: %s\n", what, xnGetStatusString(rc));		\
-		return rc;													\
-	}
+if (rc != XN_STATUS_OK)											\
+{																\
+printf("%s failed: %s\n", what, xnGetStatusString(rc));		\
+return rc;													\
+}
 
 #define CHECK_ERRORS(rc, errors, what)		\
-	if (rc == XN_STATUS_NO_NODE_PRESENT)	\
-	{										\
-		XnChar strError[1024];				\
-		errors.ToString(strError, 1024);	\
-		printf("%s\n", strError);			\
-		return (rc);						\
-	}
+if (rc == XN_STATUS_NO_NODE_PRESENT)	\
+{										\
+XnChar strError[1024];				\
+errors.ToString(strError, 1024);	\
+printf("%s\n", strError);			\
+return (rc);						\
+}
 
 #ifdef USE_GLUT
-	#if (XN_PLATFORM == XN_PLATFORM_MACOSX)
-		#include <GLUT/glut.h>
-	#else
-		#include <GL/glut.h>
-	#endif
+#if (XN_PLATFORM == XN_PLATFORM_MACOSX)
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
 #endif
+#endif
+
+// Drawing functions
+void DrawLine(XnFloat fMinX, XnFloat fMinY, XnFloat fMinZ,
+			  XnFloat fMaxX, XnFloat fMaxY, XnFloat fMaxZ,
+			  int width, double r = 1, double g = 1, double b = 1)
+{
+#ifdef USE_GLUT
+    
+	glLineWidth(width);
+	glBegin(GL_LINES);
+	glColor3f(r, g, b);
+	glVertex3f(fMinX, fMinY, fMinZ);
+	glVertex3f(fMaxX, fMaxY, fMaxZ);
+	glEnd();
+    
+#else
+    
+	const GLubyte ind[2] = {0, 1};
+	GLfloat verts[6] = { fMinX, fMinY, fMinZ, fMaxX, fMaxY, fMaxZ };
+	glColor4f(r,g,b,1.0f);
+	glVertexPointer(3, GL_FLOAT, 0, verts);
+	glLineWidth(width);
+	glDrawArrays(GL_LINES, 0, 2);
+	glFlush();
+    
+#endif
+}
+
+void DrawFrame(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, int width, double r, double g, double b)
+{
+	XnPoint3D ptTopLeft = ptMins;
+	XnPoint3D ptBottomRight = ptMaxs;
+    
+	// Top line
+	DrawLine(ptTopLeft.X, ptTopLeft.Y, 0,
+             ptBottomRight.X, ptTopLeft.Y, 0,
+             width, r, g, b);
+	// Right Line
+	DrawLine(ptBottomRight.X, ptTopLeft.Y, 0,
+             ptBottomRight.X, ptBottomRight.Y,0,
+             width, r, g, b);
+	// Bottom Line
+	DrawLine(ptBottomRight.X, ptBottomRight.Y,0,
+             ptTopLeft.X, ptBottomRight.Y,0,
+             width, r, g, b);
+	// Left Line
+	DrawLine(ptTopLeft.X, ptBottomRight.Y,0,
+             ptTopLeft.X, ptTopLeft.Y,0,
+             width, r, g, b);
+    
+}
+
+void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int size,
+              int width, double r = 1, double g = 1, double b = 1) {
+    glColor4f(r,g,b,1.0f);
+    glLineWidth(width);
+    glPushMatrix();
+    glTranslatef(center_x, center_y, 0);
+    glRotatef(rotation, 0, 1, 0);
+    switch (i) {
+        case 0:
+            glutWireCube(size);
+            break;
+        case 1:
+            glutWireSphere(size, 8, 8);
+            break;
+        case 2:
+            glutWireCone(size, size, 8, 8);
+            break;
+        case 3:
+            glutWireTorus(size/2, size, 8, 8);
+            break;
+    }
+    glPopMatrix();
+}
+
+#include "MyBox.h"
 
 // OpenNI objects
 xn::Context g_Context;
@@ -61,11 +147,15 @@ xn::HandsGenerator g_HandsGenerator;
 XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
 
+const int NUM_BOXES = 4;
+MyBox* g_pBox[NUM_BOXES];
+
 // the drawer
 XnVPointDrawer* g_pDrawer;
 
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
+#define TOOL_SIZE 40
 
 // Draw the depth map?
 XnBool g_bDrawDepthMap = true;
@@ -79,7 +169,12 @@ SessionState g_SessionState = NOT_IN_SESSION;
 
 void CleanupExit()
 {
-	g_Context.Shutdown();
+	
+    for(int i = 0; i < NUM_BOXES; i++) {
+        delete g_pBox[i];
+    }
+    
+    g_Context.Shutdown();
 
 	exit (1);
 }
@@ -110,41 +205,10 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 	}
 }
 
-void drawToolbox(float xRes, float yRes) {
-    const int d = 50;
-    const int size = 40;
-    int i = 0;
-    
-    glColor3f(1,1,1);
-    glPushMatrix();
-    glTranslatef(xRes-d, d+2*d*i, 0);
-    glRotatef(90, 0, 1, 0);
-    glutWireCube(size);
-    glPopMatrix();
-    
-    i++;
-    
-    glPushMatrix();
-    glTranslatef(xRes-d, d+2*d*i, 0);
-    glRotatef(90, 0, 1, 0);
-    glutWireSphere(size, 8, 8);
-    glPopMatrix();
-    
-    i++;
-    
-    glPushMatrix();
-    glTranslatef(xRes-d, d+2*d*i, 0);
-    glRotatef(90, 0, 1, 0);
-    glutWireCone(size, size, 8, 8);
-    glPopMatrix();
-    
-    i++;
-    
-    glPushMatrix();
-    glTranslatef(xRes-d, d+2*d*i, 0);
-    glRotatef(90, 0, 1, 0);
-    glutWireTorus(size/2, size, 8, 8);
-    glPopMatrix();
+// Callback for the MyBox
+void XN_CALLBACK_TYPE MyBox_Leave(void* UserContext)
+{
+	// TODO??
 }
 
 // this function is called each frame
@@ -180,7 +244,10 @@ void glutDisplay (void)
 		PrintSessionState(g_SessionState);
 	}
     
-    drawToolbox(mode.nXRes, mode.nYRes);
+    for(int i = 0; i < NUM_BOXES; i++) {
+        g_pBox[i]->Draw();
+    }
+
     
 	#ifdef USE_GLUT
 	glutSwapBuffers();
@@ -310,7 +377,20 @@ int main(int argc, char ** argv)
 
 	g_pDrawer->RegisterNoPoints(NULL, NoHands);
 	g_pDrawer->SetDepthMap(g_bDrawDepthMap);
-
+    
+    
+	// Register callback to the MyBox objects for their Leave event.
+    XnPoint3D ptMax, ptMin;
+    ptMax.Z = ptMin.Z = 0;
+    ptMin.X = GL_WIN_SIZE_X-TOOL_SIZE*2-100;  
+    ptMax.X = GL_WIN_SIZE_X-100;
+    for(int i = 0; i < NUM_BOXES; i++) {
+      
+        ptMin.Y = 20 + i*2*TOOL_SIZE;
+        ptMax.Y = 20 + (i+1)*2*TOOL_SIZE;
+        g_pBox[i] = new MyBox(ptMax, ptMin, i, TOOL_SIZE);
+        g_pBox[i]->RegisterLeave(NULL, &MyBox_Leave);
+    }
 	// Initialization done. Start generating
 	rc = g_Context.StartGeneratingAll();
 	CHECK_RC(rc, "StartGenerating");
