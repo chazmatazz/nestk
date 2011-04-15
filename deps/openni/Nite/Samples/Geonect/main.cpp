@@ -120,13 +120,16 @@ void glutDisplay (void)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
+    
+    glMatrixMode(GL_MODELVIEW); // Select The Modelview Matrix
+    glLoadIdentity(); // Reset The Modelview Matrix
 
 	XnMapOutputMode mode;
 	g_DepthGenerator.GetMapOutputMode(mode);
 	#ifdef USE_GLUT
-	glOrtho(0, mode.nXRes, mode.nYRes, 0, -1.0, 1.0);
+    glOrtho(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
 	#else
-	glOrthof(0, mode.nXRes, mode.nYRes, 0, -1.0, 1.0);
+	glOrthof(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
 	#endif
 
 	glDisable(GL_TEXTURE_2D);
@@ -139,7 +142,7 @@ void glutDisplay (void)
 		g_pSessionManager->Update(&g_Context);
 		PrintSessionState(g_SessionState);
 	}
-
+    
 	#ifdef USE_GLUT
 	glutSwapBuffers();
 	#endif
@@ -193,21 +196,45 @@ void glutKeyboard (unsigned char key, int x, int y)
 void glInit (int * pargc, char ** argv)
 {
 	glutInit(pargc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
 	glutCreateWindow ("PrimeSense Nite Point Viewer");
 	//glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_NONE);
 
+    glClearColor(0, 0, 0, 0);
+    glClearDepth(1.0);
 	glutKeyboardFunc(glutKeyboard);
 	glutDisplayFunc(glutDisplay);
 	glutIdleFunc(glutIdle);
 
-	glDisable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LESS);		// The Type Of Depth Test To Do
+	glEnable(GL_DEPTH_TEST);
+    glFrontFace(GL_CCW);	    // Counterclockwise polygons face out
+	//glDisable(GL_DEPTH_TEST);
 	glEnable(GL_TEXTURE_2D);
+    glShadeModel(GL_SMOOTH); // Enables Smooth Color Shading
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
+    
+    glEnable( GL_LIGHTING );
+    GLfloat diffuseLight[] = { 0.7, 0.7, 0.7, 1.0 };	/// RGBA, vary the 3 first paramaters to change the light color and intensity.   
+    glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuseLight );	/// Create the light source
+    glEnable( GL_LIGHT0 );					/// Light it!
+
+    glEnable( GL_COLOR_MATERIAL );
+	glColorMaterial( GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
+    
+    GLfloat ambientLight[] = { 0.05, 0.05, 0.05, 1.0 };		/// Define color and intensity
+    glLightfv( GL_LIGHT0, GL_AMBIENT, ambientLight );		/// Add ambient component
+    
+    GLfloat specularLight[] = { 0.7, 0.7, 0.7, 1.0 };
+    GLfloat spectre[] = { 1.0, 1.0, 1.0, 1.0 };
+    
+    glLightfv( GL_LIGHT0, GL_SPECULAR, specularLight );
+    glMaterialfv( GL_FRONT, GL_SPECULAR, spectre );
+    glMateriali( GL_FRONT, GL_SHININESS, 128 );
 }
 #endif
 

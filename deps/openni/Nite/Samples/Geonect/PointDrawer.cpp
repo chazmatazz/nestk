@@ -31,6 +31,7 @@
 	#include "opengles.h"
 #endif
 
+
 // Constructor. Receives the number of previous positions to store per hand,
 // and a source for depth map
 XnVPointDrawer::XnVPointDrawer(XnUInt32 nHistory, xn::DepthGenerator depthGenerator) :
@@ -326,7 +327,7 @@ void XnVPointDrawer::Draw() const
 			XnPoint3D pt(*PositionIterator);
 			m_pfPositionBuffer[3*i] = pt.X;
 			m_pfPositionBuffer[3*i + 1] = pt.Y;
-			m_pfPositionBuffer[3*i + 2] = 0;//pt.Z();
+			m_pfPositionBuffer[3*i + 2] = 0;//pt.Z;
 		}
 		
 		// Set color
@@ -345,7 +346,13 @@ void XnVPointDrawer::Draw() const
 
 		glPointSize(8);
 		glDrawArrays(GL_POINTS, 0, 1);
-		glFlush();
+        
+        glPushMatrix();
+        glTranslatef(m_pfPositionBuffer[3*0], m_pfPositionBuffer[3*0+1], m_pfPositionBuffer[3*0+2]);
+        glutWireSphere(20, 8, 8);
+        glPopMatrix();
+		
+        glFlush();
 	}
 }
 
