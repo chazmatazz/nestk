@@ -110,6 +110,43 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 	}
 }
 
+void drawToolbox(float xRes, float yRes) {
+    const int d = 50;
+    const int size = 40;
+    int i = 0;
+    
+    glColor3f(1,1,1);
+    glPushMatrix();
+    glTranslatef(xRes-d, d+2*d*i, 0);
+    glRotatef(90, 0, 1, 0);
+    glutWireCube(size);
+    glPopMatrix();
+    
+    i++;
+    
+    glPushMatrix();
+    glTranslatef(xRes-d, d+2*d*i, 0);
+    glRotatef(90, 0, 1, 0);
+    glutWireSphere(size, 8, 8);
+    glPopMatrix();
+    
+    i++;
+    
+    glPushMatrix();
+    glTranslatef(xRes-d, d+2*d*i, 0);
+    glRotatef(90, 0, 1, 0);
+    glutWireCone(size, size, 8, 8);
+    glPopMatrix();
+    
+    i++;
+    
+    glPushMatrix();
+    glTranslatef(xRes-d, d+2*d*i, 0);
+    glRotatef(90, 0, 1, 0);
+    glutWireTorus(size/2, size, 8, 8);
+    glPopMatrix();
+}
+
 // this function is called each frame
 void glutDisplay (void)
 {
@@ -142,6 +179,8 @@ void glutDisplay (void)
 		g_pSessionManager->Update(&g_Context);
 		PrintSessionState(g_SessionState);
 	}
+    
+    drawToolbox(mode.nXRes, mode.nYRes);
     
 	#ifdef USE_GLUT
 	glutSwapBuffers();
@@ -219,14 +258,14 @@ void glInit (int * pargc, char ** argv)
 	glDisableClientState(GL_COLOR_ARRAY);
     
     glEnable( GL_LIGHTING );
-    GLfloat diffuseLight[] = { 0.7, 0.7, 0.7, 1.0 };	/// RGBA, vary the 3 first paramaters to change the light color and intensity.   
+    GLfloat diffuseLight[] = { 1, 1, 1, 1.0 };	/// RGBA, vary the 3 first paramaters to change the light color and intensity.   
     glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuseLight );	/// Create the light source
     glEnable( GL_LIGHT0 );					/// Light it!
 
     glEnable( GL_COLOR_MATERIAL );
 	glColorMaterial( GL_FRONT, GL_AMBIENT_AND_DIFFUSE );
     
-    GLfloat ambientLight[] = { 0.05, 0.05, 0.05, 1.0 };		/// Define color and intensity
+    GLfloat ambientLight[] = { 0.5, 0.5, 0.5, 1.0 };		/// Define color and intensity
     glLightfv( GL_LIGHT0, GL_AMBIENT, ambientLight );		/// Add ambient component
     
     GLfloat specularLight[] = { 0.7, 0.7, 0.7, 1.0 };
