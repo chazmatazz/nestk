@@ -142,10 +142,16 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 xn::Context g_Context;
 xn::DepthGenerator g_DepthGenerator;
 xn::HandsGenerator g_HandsGenerator;
+xn::GestureGenerator g_GestureGenerator;
+
+// Create recorder
+xn::Recorder recorder;
 
 // NITE objects
 XnVSessionManager* g_pSessionManager;
-XnVFlowRouter* g_pFlowRouter;
+//XnVFlowRouter* g_pFlowRouter;
+XnVBroadcaster* g_pBroadcaster;
+XnVSteadyDetector* g_pSteadyDetector;
 
 const int NUM_BOXES = 4;
 MyBox* g_pBox[NUM_BOXES];
@@ -156,6 +162,9 @@ XnVPointDrawer* g_pDrawer;
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
 #define TOOL_SIZE 40
+#define COOLDOWN_FRAMES 5 
+#define DETECTION_DURATION 300
+#define MAXIMUM_VELOCITY .005
 
 // Draw the depth map?
 XnBool g_bDrawDepthMap = true;
@@ -164,6 +173,8 @@ XnBool g_bPrintFrameID = false;
 XnFloat g_fSmoothing = 0.0f;
 XnBool g_bPause = false;
 XnBool g_bQuit = false;
+XnBool g_bPlayRecording = false;
+
 
 SessionState g_SessionState = NOT_IN_SESSION;
 
@@ -211,6 +222,17 @@ void XN_CALLBACK_TYPE MyBox_Leave(void* UserContext)
 	// TODO??
 }
 
+void XN_CALLBACK_TYPE Hand_Steady(XnFloat fVelocity, void* UserCxt) 
+{
+  // A steady hand was detected. Do whatever.
+  printf("Steady hand detected! Velocity %f\n", fVelocity);
+
+  // TODO
+  // detect steady in region of tool
+}
+
+
+
 // this function is called each frame
 void glutDisplay (void)
 {
@@ -242,10 +264,12 @@ void glutDisplay (void)
 		// Update NITE tree
 		g_pSessionManager->Update(&g_Context);
 		PrintSessionState(g_SessionState);
+        // Record
+        recorder.Record();
 	}
     
     for(int i = 0; i < NUM_BOXES; i++) {
-        g_pBox[i]->Draw();
+      g_pBox[i]->Draw();
     }
 
     
@@ -353,54 +377,66 @@ int main(int argc, char ** argv)
 	xn::EnumerationErrors errors;
 
 	// Initialize OpenNI
-	rc = g_Context.InitFromXmlFile(SAMPLE_XML_PATH, &errors);
-	CHECK_ERRORS(rc, errors, "InitFromXmlFile");
-	CHECK_RC(rc, "InitFromXmlFile");
-
-	rc = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
-	CHECK_RC(rc, "Find depth generator");
-	rc = g_Context.FindExistingNode(XN_NODE_TYPE_HANDS, g_HandsGenerator);
-	CHECK_RC(rc, "Find hands generator");
-
-	// Create NITE objects
-	g_pSessionManager = new XnVSessionManager;
-	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
-	CHECK_RC(rc, "SessionManager::Initialize");
-
-	g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
-
-	g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator); 
-	g_pFlowRouter = new XnVFlowRouter;
-	g_pFlowRouter->SetActive(g_pDrawer);
-
-	g_pSessionManager->AddListener(g_pFlowRouter);
-
-	g_pDrawer->RegisterNoPoints(NULL, NoHands);
-	g_pDrawer->SetDepthMap(g_bDrawDepthMap);
+    rc = g_Context.InitFromXmlFile(SAMPLE_XML_PATH, &errors);
+    CHECK_ERRORS(rc, errors, "InitFromXmlFile");
+    CHECK_RC(rc, "InitFromXmlFile");
     
+    rc = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
+    CHECK_RC(rc, "Find depth generator");
+    rc = g_Context.FindExistingNode(XN_NODE_TYPE_HANDS, g_HandsGenerator);
+    CHECK_RC(rc, "Find hands generator");
+    rc = g_Context.FindExistingNode(XN_NODE_TYPE_GESTURE, g_GestureGenerator);
+    CHECK_RC(rc, "Find gesture generator");
     
-	// Register callback to the MyBox objects for their Leave event.
+    // Create NITE objects
+    g_pSessionManager = new XnVSessionManager;
+    rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
+    CHECK_RC(rc, "SessionManager::Initialize");
+    
+    g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
+    
+    g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator); 
+    g_pSteadyDetector = new XnVSteadyDetector(COOLDOWN_FRAMES, 
+                                              DETECTION_DURATION, 
+                                              MAXIMUM_VELOCITY, 
+                                              "XnVSteadyDetector");
+    g_pBroadcaster = new XnVBroadcaster();
+    //g_pFlowRouter = new XnVFlowRouter;
+    //g_pFlowRouter->SetActive(g_pDrawer);
+    //g_pSessionManager->AddListener(g_pFlowRouter);
+    g_pBroadcaster->AddListener(g_pDrawer);
+    g_pBroadcaster->AddListener(g_pSteadyDetector);
+    g_pSessionManager->AddListener(g_pBroadcaster);
+    
+    g_pDrawer->RegisterNoPoints(NULL, NoHands);
+    g_pDrawer->SetDepthMap(g_bDrawDepthMap);
+    g_pSteadyDetector->RegisterSteady(NULL, Hand_Steady); 
+    g_pSessionManager->AddListener(g_pSteadyDetector);
+    
+    // Register callback to the MyBox objects for their Leave event.
     XnPoint3D ptMax, ptMin;
     ptMax.Z = ptMin.Z = 0;
     ptMin.X = GL_WIN_SIZE_X-TOOL_SIZE*2-100;  
     ptMax.X = GL_WIN_SIZE_X-100;
     for(int i = 0; i < NUM_BOXES; i++) {
       
-        ptMin.Y = 20 + i*2*TOOL_SIZE;
-        ptMax.Y = 20 + (i+1)*2*TOOL_SIZE;
-        g_pBox[i] = new MyBox(ptMax, ptMin, i, TOOL_SIZE);
-        g_pBox[i]->RegisterLeave(NULL, &MyBox_Leave);
+      ptMin.Y = 20 + i*2*TOOL_SIZE;
+      ptMax.Y = 20 + (i+1)*2*TOOL_SIZE;
+      g_pBox[i] = new MyBox(ptMax, ptMin, i, TOOL_SIZE);
+      g_pBox[i]->RegisterLeave(NULL, &MyBox_Leave);
     }
-	// Initialization done. Start generating
-	rc = g_Context.StartGeneratingAll();
-	CHECK_RC(rc, "StartGenerating");
 
-	// Mainloop
-	#ifdef USE_GLUT
-
-	glInit(&argc, argv);
-	glutMainLoop();
-
-	#else
-	#endif
+    // Initialization done. Start generating
+    rc = g_Context.StartGeneratingAll();
+    CHECK_RC(rc, "StartGenerating");
+    
+    // Mainloop
+    #ifdef USE_GLUT
+        
+    glInit(&argc, argv);
+    glutMainLoop();
+    
+    #else
+    #endif
+    
 }
