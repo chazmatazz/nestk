@@ -31,6 +31,7 @@
 #include <XnVSteadyDetector.h>
 #include <XnVBroadcaster.h>
 #include <XnVPushDetector.h>
+#include <XnVPointArea.h>
 
 // Header for NITE
 #include "XnVNite.h"
@@ -144,14 +145,10 @@ xn::DepthGenerator g_DepthGenerator;
 xn::HandsGenerator g_HandsGenerator;
 xn::GestureGenerator g_GestureGenerator;
 
-// Create recorder
-xn::Recorder recorder;
-
 // NITE objects
 XnVSessionManager* g_pSessionManager;
-//XnVFlowRouter* g_pFlowRouter;
+XnVFlowRouter* g_pFlowRouter;
 XnVBroadcaster* g_pBroadcaster;
-XnVSteadyDetector* g_pSteadyDetector;
 
 const int NUM_BOXES = 4;
 MyBox* g_pBox[NUM_BOXES];
@@ -180,11 +177,18 @@ SessionState g_SessionState = NOT_IN_SESSION;
 
 void CleanupExit()
 {
-	
+  /*	
     for(int i = 0; i < NUM_BOXES; i++) {
         delete g_pBox[i];
     }
-    
+
+    g_pBroadcaster->RemoveListener(g_pDrawer);
+    g_pSessionManager->RemoveListener(g_pBroadcaster);
+
+    delete g_pBroadcaster;
+    delete g_pSessionManager;
+    delete g_pDrawer;
+  */
     g_Context.Shutdown();
 
 	exit (1);
@@ -217,21 +221,46 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 }
 
 // Callback for the MyBox
-void XN_CALLBACK_TYPE MyBox_Leave(void* UserContext)
+void XN_CALLBACK_TYPE MyBox_Select(void* cxt)
 {
-	// TODO??
+  // Only allow one box to be selected at a time
+  for(int i = 0; i < NUM_BOXES; i++)
+  {
+    g_pBox[i]->SetUnselected();
+  } 
+
+  MyBox* box = (MyBox*)(cxt);
+  box->SetSelected();
+
+  // Create object for this box
+
+  // Add object to a list for tracking all objects being manupulated
+
+  // Switch to manupulation mode
 }
 
-void XN_CALLBACK_TYPE Hand_Steady(XnFloat fVelocity, void* UserCxt) 
+//  Callback for MyBox inherited from XnVPointControl 
+void XN_CALLBACK_TYPE MyBox_PointUpdate(const XnVHandPointContext*pContext, void* cxt)
 {
-  // A steady hand was detected. Do whatever.
-  printf("Steady hand detected! Velocity %f\n", fVelocity);
+      // Convert to a 2D projection
+      XnPoint3D ptProjective(pContext->ptPosition);
+      g_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
 
-  // TODO
-  // detect steady in region of tool
+      // Check if hand position is inside one of the toolbox buttons
+      for(int i = 0; i < NUM_BOXES; i++)
+      {      
+        if(ptProjective.X < g_pBox[i]->m_BoundingBox.LeftBottomNear.X &&
+           ptProjective.Y < g_pBox[i]->m_BoundingBox.LeftBottomNear.Y &&
+           ptProjective.X > g_pBox[i]->m_BoundingBox.RightTopFar.X &&
+           ptProjective.Y > g_pBox[i]->m_BoundingBox.RightTopFar.Y)
+        {
+          // Allows selection of this box if hand is steady
+          g_pBox[i]->SetSteadyActive();
+        }
+          
+        else {g_pBox[i]->SetSwipeActive();};
+      }
 }
-
-
 
 // this function is called each frame
 void glutDisplay (void)
@@ -264,8 +293,6 @@ void glutDisplay (void)
 		// Update NITE tree
 		g_pSessionManager->Update(&g_Context);
 		PrintSessionState(g_SessionState);
-        // Record
-        recorder.Record();
 	}
     
     for(int i = 0; i < NUM_BOXES; i++) {
@@ -396,26 +423,19 @@ int main(int argc, char ** argv)
     g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
     
     g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator); 
-    g_pSteadyDetector = new XnVSteadyDetector(COOLDOWN_FRAMES, 
-                                              DETECTION_DURATION, 
-                                              MAXIMUM_VELOCITY, 
-                                              "XnVSteadyDetector");
-    g_pBroadcaster = new XnVBroadcaster();
-    //g_pFlowRouter = new XnVFlowRouter;
-    //g_pFlowRouter->SetActive(g_pDrawer);
-    //g_pSessionManager->AddListener(g_pFlowRouter);
-    g_pBroadcaster->AddListener(g_pDrawer);
-    g_pBroadcaster->AddListener(g_pSteadyDetector);
-    g_pSessionManager->AddListener(g_pBroadcaster);
     
+    g_pBroadcaster = new XnVBroadcaster();
+    g_pBroadcaster->AddListener(g_pDrawer);    
+    g_pSessionManager->AddListener(g_pBroadcaster);
+
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
-    g_pSteadyDetector->RegisterSteady(NULL, Hand_Steady); 
-    g_pSessionManager->AddListener(g_pSteadyDetector);
     
+
     // Register callback to the MyBox objects for their Leave event.
     XnPoint3D ptMax, ptMin;
-    ptMax.Z = ptMin.Z = 0;
+    ptMax.Z = 0;
+    ptMin.Z = 0;
     ptMin.X = GL_WIN_SIZE_X-TOOL_SIZE*2-100;  
     ptMax.X = GL_WIN_SIZE_X-100;
     for(int i = 0; i < NUM_BOXES; i++) {
@@ -423,7 +443,11 @@ int main(int argc, char ** argv)
       ptMin.Y = 20 + i*2*TOOL_SIZE;
       ptMax.Y = 20 + (i+1)*2*TOOL_SIZE;
       g_pBox[i] = new MyBox(ptMax, ptMin, i, TOOL_SIZE);
-      g_pBox[i]->RegisterLeave(NULL, &MyBox_Leave);
+      g_pBox[i]->RegisterSelect(NULL, &MyBox_Select);
+      g_pBox[i]->RegisterPointUpdate(NULL, &MyBox_PointUpdate);
+      g_pSessionManager->AddListener(g_pBox[i]);
+
+      printf("DEBUG: box %d ->(%f,%f,%f)-(%f,%f,%f)\n", i, ptMax.X, ptMax.Y, ptMax.Z, ptMin.X, ptMin.Y, ptMin.Z);
     }
 
     // Initialization done. Start generating
@@ -432,7 +456,7 @@ int main(int argc, char ** argv)
     
     // Mainloop
     #ifdef USE_GLUT
-        
+
     glInit(&argc, argv);
     glutMainLoop();
     

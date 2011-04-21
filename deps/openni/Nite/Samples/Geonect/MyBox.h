@@ -32,8 +32,11 @@ const float ROT_SPEED = 0.1f;
 class MyBox : public XnVPointControl
 {
 public:
+	XnBoundingBox3D m_BoundingBox;
+    XnBool SELECTED_STATE;
 
 	typedef void (XN_CALLBACK_TYPE *LeaveCB)(void* pUserCxt);
+	typedef void (XN_CALLBACK_TYPE *SelectCB)(void* cxt);
 
 	// Create the MyBox
 	MyBox(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, const int tool, 
@@ -47,19 +50,17 @@ public:
 		// 2 points (projective) define a box
 		m_BoundingBox.LeftBottomNear = ptMins;
 		m_BoundingBox.RightTopFar = ptMaxs;
+        SELECTED_STATE = false;
 
 		// Create internal objects
 		m_pInnerFlowRouter = new XnVFlowRouter;
-		m_pPushDetector = new XnVPushDetector;
 		m_pSwipeDetector = new XnVSwipeDetector;
 		m_pSteadyDetector = new XnVSteadyDetector;
 
-		// Add the push detector and flow manager to the broadcaster
+        // Swipe detector used as a dummy detector for the flow switch
+        // no selection can be made while the swipe detector is active
 		m_Broadcaster.AddListener(m_pInnerFlowRouter);
-		m_Broadcaster.AddListener(m_pPushDetector);
-
-		// flow begins with the steady detector
-		m_pInnerFlowRouter->SetActive(m_pSteadyDetector);
+        m_pInnerFlowRouter->SetActive(m_pSwipeDetector);
 
 		// Register to notifications as broadcaster
 		RegisterActivate(this, &Broadcaster_OnActivate);
@@ -68,26 +69,17 @@ public:
 		RegisterPrimaryPointDestroy(this, &Broadcaster_OnPrimaryDestroy);
 
 		// Listen to inner activateable's events:
-		// Push
-		m_pPushDetector->RegisterPush(this, &Push_Pushed);
-		// Swip
-		m_pSwipeDetector->RegisterSwipeUp(this, &Swipe_SwipeUp);
-		m_pSwipeDetector->RegisterSwipeDown(this, &Swipe_SwipeDown);
-		m_pSwipeDetector->RegisterSwipeLeft(this, &Swipe_SwipeLeft);
-		m_pSwipeDetector->RegisterSwipeRight(this, &Swipe_SwipeRight);
-		// Steady
 		m_pSteadyDetector->RegisterSteady(this, &Steady_OnSteady);
 	}
 
 	~MyBox()
 	{
-		m_Broadcaster.RemoveListener(m_pInnerFlowRouter);
-		m_Broadcaster.RemoveListener(m_pPushDetector);
-
-		delete m_pInnerFlowRouter;
-		delete m_pPushDetector;
-		delete m_pSwipeDetector;
-		delete m_pSteadyDetector;
+      m_Broadcaster.RemoveListener(m_pInnerFlowRouter);
+      m_Broadcaster.RemoveListener(m_pSteadyDetector);
+      
+      delete m_pInnerFlowRouter;
+      delete m_pSteadyDetector;
+      delete &m_Broadcaster;
 	}
 
 	// Affects the existence and color of the frame in drawing
@@ -201,20 +193,34 @@ public:
 	}
 
 
-	// Change flow state between steady and swipe
+	// Change flow state to steady to see if there is a selection of this box
 	void SetSteadyActive() {m_pInnerFlowRouter->SetActive(m_pSteadyDetector);}
+
+    // Change flow away from steady, no selection can be made
 	void SetSwipeActive() {m_pInnerFlowRouter->SetActive(m_pSwipeDetector);}
 
-	// Register/Unregister for MyBox's event - Leave
-	XnCallbackHandle RegisterLeave(void* UserContext, LeaveCB pCB)
+    void SetSelected() 
+    {
+      SELECTED_STATE = true;
+      SetFrameMode(FrameOver);
+    }
+    void SetUnselected() 
+    {
+      SELECTED_STATE = false;
+      SetFrameMode(FrameIn);
+    }
+
+
+	// Register/Unregister for MyBox's event - Select
+	XnCallbackHandle RegisterSelect(void* UserContext, LeaveCB pCB)
 	{
 		XnCallbackHandle handle;
-		m_LeaveCBs.Register(pCB, UserContext, &handle);
+		m_SelectCBs.Register(pCB, this, &handle);
 		return handle;
 	}
-	void UnregisterLeave(XnCallbackHandle handle)
+	void UnregisterSelect(XnCallbackHandle handle)
 	{
-		m_LeaveCBs.Unregister(handle);
+		m_SelectCBs.Unregister(handle);
 	}
 
 	void Update(XnVMessage* pMessage)
@@ -226,25 +232,25 @@ public:
 private:
 	// Callbacks for internal activateable's events:
 
+
 	// The broadcaster (the MyBox itself)
 	static void XN_CALLBACK_TYPE Broadcaster_OnActivate(void* cxt)
 	{
 		MyBox* box = (MyBox*)(cxt);
-		box->SetFrameMode(MyBox::FrameIn);
-
-		box->SetSteadyActive();
+		box->SetUnselected();
 	}
 
 	static void XN_CALLBACK_TYPE Broadcaster_OnDeactivate(void* cxt)
 	{
 		MyBox* box = (MyBox*)(cxt);
-		box->SetFrameMode(MyBox::FrameOver);
+		box->SetFrameMode(MyBox::FrameInactive);
 	}
 
 	static void XN_CALLBACK_TYPE Broadcaster_OnPrimaryCreate(const XnVHandPointContext* hand, const XnPoint3D& ptFocus, void* cxt)
 	{
 		MyBox* box = (MyBox*)(cxt);
-		box->SetFrameMode(MyBox::FrameIn);
+        if(box->SELECTED_STATE) {box->SetSelected();}
+        else {box->SetUnselected();}
 	}
 
 	static void XN_CALLBACK_TYPE Broadcaster_OnPrimaryDestroy(XnUInt32 nID, void* cxt)
@@ -253,84 +259,33 @@ private:
 		box->SetFrameMode(MyBox::FrameInactive);
 	}
 
-	// Push detector
-	static void XN_CALLBACK_TYPE Push_Pushed(XnFloat fVelocity, XnFloat fAngle, void* cxt)
-	{
-		printf("Push!\n");
-		MyBox* box = (MyBox*)(cxt);
-		box->SetBold(MyBox::BoldNone);
-		// Leave the box
-		box->Leave();
-	}
-
-	// Swipe detector
-	static void XN_CALLBACK_TYPE Swipe_SwipeUp(XnFloat fVelocity, XnFloat fAngle, void* cxt)
-	{
-		printf("Up!\n");
-		MyBox* box = (MyBox*)(cxt);
-		box->SetBold(MyBox::BoldUp);
-
-		box->SetSteadyActive();
-	}
-
-	static void XN_CALLBACK_TYPE Swipe_SwipeDown(XnFloat fVelocity, XnFloat fAngle, void* cxt)
-	{
-		printf("Down!\n");
-		MyBox* box = (MyBox*)(cxt);
-		box->SetBold(MyBox::BoldDown);
-
-		box->SetSteadyActive();
-	}
-
-	static void XN_CALLBACK_TYPE Swipe_SwipeLeft(XnFloat fVelocity, XnFloat fAngle, void* cxt)
-	{
-		printf("Left!\n");
-		MyBox* box = (MyBox*)(cxt);
-		box->SetBold(MyBox::BoldLeft);
-
-		box->SetSteadyActive();
-	}
-
-	static void XN_CALLBACK_TYPE Swipe_SwipeRight(XnFloat fVelocity, XnFloat fAngle, void* cxt)
-	{
-		printf("Right!\n");
-		MyBox* box = (MyBox*)(cxt);
-		box->SetBold(MyBox::BoldRight);
-
-		box->SetSteadyActive();
-	}
 
 	// Steady detector
 	static void XN_CALLBACK_TYPE Steady_OnSteady(XnFloat fVelocity, void* cxt)
 	{
-		printf("Steady\n");
 		MyBox* box = (MyBox*)(cxt);
-		box->SetBold(MyBox::BoldNone);
-
-		box->SetSwipeActive();
+        box->SetSelected();
+        box->Select();
 	}
 
-
-	// Inform all - leaving the box
-	void Leave()
+	// Inform all - box selected
+	void Select()
 	{
-		m_LeaveCBs.Raise();
+      m_SelectCBs.Raise();
 	}
 
 private:
-	XnBoundingBox3D m_BoundingBox;
     int m_tool;
     int m_size;
 	BoldSide m_Bold;
 	FrameMode m_FrameMode;
 
-	XnVPushDetector* m_pPushDetector;
 	XnVFlowRouter* m_pInnerFlowRouter;
 	XnVSwipeDetector* m_pSwipeDetector;
 	XnVSteadyDetector* m_pSteadyDetector;
 	XnVBroadcaster m_Broadcaster;
 
-	XnVEvent m_LeaveCBs;
+	XnVEvent m_SelectCBs;
 };
 
 #endif
