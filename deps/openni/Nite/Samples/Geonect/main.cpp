@@ -35,24 +35,26 @@
 
 // Header for NITE
 #include "XnVNite.h"
-// local header
+
+// local headers
 #include "PointDrawer.h"
 
-#define CHECK_RC(rc, what)											\
-if (rc != XN_STATUS_OK)											\
-{																\
-printf("%s failed: %s\n", what, xnGetStatusString(rc));		\
-return rc;													\
-}
 
-#define CHECK_ERRORS(rc, errors, what)		\
-if (rc == XN_STATUS_NO_NODE_PRESENT)	\
-{										\
-XnChar strError[1024];				\
-errors.ToString(strError, 1024);	\
-printf("%s\n", strError);			\
-return (rc);						\
-}
+#define CHECK_RC(rc, what)                                      \
+  if (rc != XN_STATUS_OK)                                       \
+    {                                                           \
+      printf("%s failed: %s\n", what, xnGetStatusString(rc));   \
+      return rc;                                                \
+    }
+
+#define CHECK_ERRORS(rc, errors, what)  \
+  if (rc == XN_STATUS_NO_NODE_PRESENT)	\
+    {                                   \
+      XnChar strError[1024];            \
+      errors.ToString(strError, 1024);	\
+      printf("%s\n", strError);			\
+      return (rc);						\
+    }
 
 #ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
@@ -137,7 +139,18 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
     glPopMatrix();
 }
 
-#include "MyBox.h"
+
+#include "SteadyButton.h"
+
+#define GL_WIN_SIZE_X 720
+#define GL_WIN_SIZE_Y 480
+#define TOOL_SIZE 40
+#define COOLDOWN_FRAMES 5 
+#define DETECTION_DURATION 300
+#define MAXIMUM_VELOCITY .005
+#define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
+#define STEADY_DELAY 10
+#define DISPLAY_DELAY 2
 
 // OpenNI objects
 xn::Context g_Context;
@@ -150,18 +163,11 @@ XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
 XnVBroadcaster* g_pBroadcaster;
 
-const int NUM_BOXES = 4;
-MyBox* g_pBox[NUM_BOXES];
+const int NUM_STEADY_BUTTONS = 4;
+SteadyButton* g_pSButton[NUM_STEADY_BUTTONS];
 
 // the drawer
 XnVPointDrawer* g_pDrawer;
-
-#define GL_WIN_SIZE_X 720
-#define GL_WIN_SIZE_Y 480
-#define TOOL_SIZE 40
-#define COOLDOWN_FRAMES 5 
-#define DETECTION_DURATION 300
-#define MAXIMUM_VELOCITY .005
 
 // Draw the depth map?
 XnBool g_bDrawDepthMap = true;
@@ -171,15 +177,30 @@ XnFloat g_fSmoothing = 0.0f;
 XnBool g_bPause = false;
 XnBool g_bQuit = false;
 XnBool g_bPlayRecording = false;
-
-
+int counter = 0;
 SessionState g_SessionState = NOT_IN_SESSION;
+
+typedef enum {
+  SHAPE_SELECTION,
+  SHAPE_MANIPULATION,
+  TOOL_SELECTION,
+} UserMode;
+
+UserMode g_UserMode = SHAPE_SELECTION;
+
+typedef enum {
+  TRANSLATION,
+  ROTATION,
+  SCALE,
+} ToolSelected;
+
+ToolSelected g_ToolSelected = TRANSLATION;
 
 void CleanupExit()
 {
   /*	
-    for(int i = 0; i < NUM_BOXES; i++) {
-        delete g_pBox[i];
+    for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+        delete g_pSButton[i];
     }
 
     g_pBroadcaster->RemoveListener(g_pDrawer);
@@ -220,46 +241,41 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 	}
 }
 
-// Callback for the MyBox
-void XN_CALLBACK_TYPE MyBox_Select(void* cxt)
+// Callback for the SteadyButton
+void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 {
-  // Only allow one box to be selected at a time
-  for(int i = 0; i < NUM_BOXES; i++)
-  {
-    g_pBox[i]->SetUnselected();
-  } 
+  if(g_UserMode == SHAPE_SELECTION) {
+    counter++;
+    
+    SteadyButton* box = (SteadyButton*)(cxt);
+    box->SetSelected();
+    
+    // Create object for this box
+    // Automatically deselect the object
+    // Add object to a list for tracking all objects being manupulated
+    
+    // remove the shape selection panel
+    //delete [] g_pSButton;
+    
+    if(counter == DISPLAY_DELAY) {
+      // Switch to manupulation mode
+      g_UserMode = SHAPE_MANIPULATION;
+      g_ToolSelected = TRANSLATION;
+      for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+        g_pSButton[i]->SetUnselected();
+      } 
+      counter = 0;
+    }
+  }
 
-  MyBox* box = (MyBox*)(cxt);
-  box->SetSelected();
+  if(g_UserMode == SHAPE_MANIPULATION) {
+    // detect object selection on steady
+  }
 
-  // Create object for this box
+  if(g_UserMode == TOOL_SELECTION) {
+    // select tool
+  }
 
-  // Add object to a list for tracking all objects being manupulated
-
-  // Switch to manupulation mode
-}
-
-//  Callback for MyBox inherited from XnVPointControl 
-void XN_CALLBACK_TYPE MyBox_PointUpdate(const XnVHandPointContext*pContext, void* cxt)
-{
-      // Convert to a 2D projection
-      XnPoint3D ptProjective(pContext->ptPosition);
-      g_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
-
-      // Check if hand position is inside one of the toolbox buttons
-      for(int i = 0; i < NUM_BOXES; i++)
-      {      
-        if(ptProjective.X < g_pBox[i]->m_BoundingBox.LeftBottomNear.X &&
-           ptProjective.Y < g_pBox[i]->m_BoundingBox.LeftBottomNear.Y &&
-           ptProjective.X > g_pBox[i]->m_BoundingBox.RightTopFar.X &&
-           ptProjective.Y > g_pBox[i]->m_BoundingBox.RightTopFar.Y)
-        {
-          // Allows selection of this box if hand is steady
-          g_pBox[i]->SetSteadyActive();
-        }
-          
-        else {g_pBox[i]->SetSwipeActive();};
-      }
 }
 
 // this function is called each frame
@@ -276,7 +292,7 @@ void glutDisplay (void)
     glMatrixMode(GL_MODELVIEW); // Select The Modelview Matrix
     glLoadIdentity(); // Reset The Modelview Matrix
 
-	XnMapOutputMode mode;
+    XnMapOutputMode mode;
 	g_DepthGenerator.GetMapOutputMode(mode);
 	#ifdef USE_GLUT
     glOrtho(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
@@ -295,8 +311,22 @@ void glutDisplay (void)
 		PrintSessionState(g_SessionState);
 	}
     
-    for(int i = 0; i < NUM_BOXES; i++) {
-      g_pBox[i]->Draw();
+    // Draw the shape icons if in shape selection mode
+    if(g_UserMode == SHAPE_SELECTION) {
+      for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+        g_pSButton[i]->Draw();
+      }
+    }
+
+    // Draw the tool icon if in manupulation mode
+    if(g_UserMode == SHAPE_MANIPULATION) {
+      // draw current tool
+      // initialize tool manipulation class/code
+    }
+
+    // Draw tool selection panel
+    if(g_UserMode == TOOL_SELECTION) {
+      // draw tool panel
     }
 
     
@@ -350,6 +380,7 @@ void glutKeyboard (unsigned char key, int x, int y)
 		break;
 	}
 }
+
 void glInit (int * pargc, char ** argv)
 {
 	glutInit(pargc, argv);
@@ -395,8 +426,25 @@ void glInit (int * pargc, char ** argv)
 }
 #endif
 
-// xml to initialize OpenNI
-#define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
+
+void initShapePanel() 
+{
+    // Register callback to the SteadyButton objects for their Select event.
+    XnPoint3D ptMax, ptMin;
+    ptMax.Z = 0;
+    ptMin.Z = 0;
+    ptMin.Y = GL_WIN_SIZE_Y-TOOL_SIZE*2-100;  
+    ptMax.Y = GL_WIN_SIZE_Y-100;
+    for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+      
+      ptMin.X = 200 + i*2*TOOL_SIZE;
+      ptMax.X = 200 + (i+1)*2*TOOL_SIZE;
+      g_pSButton[i] = new SteadyButton(ptMax, ptMin, i, TOOL_SIZE, g_DepthGenerator);
+      g_pSButton[i]->RegisterSelect(NULL, &SteadyButton_Select);
+      g_pSessionManager->AddListener(g_pSButton[i]);
+    }
+}
+
 
 int main(int argc, char ** argv)
 {
@@ -419,36 +467,15 @@ int main(int argc, char ** argv)
     g_pSessionManager = new XnVSessionManager;
     rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
     CHECK_RC(rc, "SessionManager::Initialize");
-    
     g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
-    
     g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator); 
-    
     g_pBroadcaster = new XnVBroadcaster();
     g_pBroadcaster->AddListener(g_pDrawer);    
     g_pSessionManager->AddListener(g_pBroadcaster);
-
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
     
-
-    // Register callback to the MyBox objects for their Leave event.
-    XnPoint3D ptMax, ptMin;
-    ptMax.Z = 0;
-    ptMin.Z = 0;
-    ptMin.X = GL_WIN_SIZE_X-TOOL_SIZE*2-100;  
-    ptMax.X = GL_WIN_SIZE_X-100;
-    for(int i = 0; i < NUM_BOXES; i++) {
-      
-      ptMin.Y = 20 + i*2*TOOL_SIZE;
-      ptMax.Y = 20 + (i+1)*2*TOOL_SIZE;
-      g_pBox[i] = new MyBox(ptMax, ptMin, i, TOOL_SIZE);
-      g_pBox[i]->RegisterSelect(NULL, &MyBox_Select);
-      g_pBox[i]->RegisterPointUpdate(NULL, &MyBox_PointUpdate);
-      g_pSessionManager->AddListener(g_pBox[i]);
-
-      printf("DEBUG: box %d ->(%f,%f,%f)-(%f,%f,%f)\n", i, ptMax.X, ptMax.Y, ptMax.Z, ptMin.X, ptMin.Y, ptMin.Z);
-    }
+    initShapePanel();
 
     // Initialization done. Start generating
     rc = g_Context.StartGeneratingAll();
