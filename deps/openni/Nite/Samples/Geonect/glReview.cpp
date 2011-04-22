@@ -1,6 +1,12 @@
 //#include "stdafx.h"
 #include "iostream"
-#include <GLUT/glut.h> // Include the GLUT header file
+#ifdef USE_GLUT
+#if (XN_PLATFORM == XN_PLATFORM_MACOSX)
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+#endif
 
 bool fullscreen = false;
 bool mouseDown = false;

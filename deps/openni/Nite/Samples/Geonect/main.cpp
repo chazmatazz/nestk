@@ -64,6 +64,7 @@
 #endif
 #endif
 
+
 // Drawing functions
 void DrawLine(XnFloat fMinX, XnFloat fMinY, XnFloat fMinZ,
 			  XnFloat fMaxX, XnFloat fMaxY, XnFloat fMaxZ,
@@ -189,12 +190,16 @@ typedef enum {
 UserMode g_UserMode = SHAPE_SELECTION;
 
 typedef enum {
-  TRANSLATION,
-  ROTATION,
+  TRANSLATE,
+  ROTATE,
+  STRETCH,
   SCALE,
-} ToolSelected;
+  SELECT,
+} ToolMode;
 
-ToolSelected g_ToolSelected = TRANSLATION;
+ToolMode g_ToolMode = TRANSLATE;
+XnBool g_bSelect = false;
+
 
 void CleanupExit()
 {
@@ -260,7 +265,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
     if(counter == DISPLAY_DELAY) {
       // Switch to manupulation mode
       g_UserMode = SHAPE_MANIPULATION;
-      g_ToolSelected = TRANSLATION;
+      g_ToolMode = TRANSLATE;
       for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
         g_pSButton[i]->SetUnselected();
       } 
@@ -282,6 +287,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 void glutDisplay (void)
 {
 
+    const int size = 50;
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Setup the OpenGL viewpoint
@@ -321,15 +327,40 @@ void glutDisplay (void)
     // Draw the tool icon if in manupulation mode
     if(g_UserMode == SHAPE_MANIPULATION) {
       // draw current tool
-      // initialize tool manipulation class/code
-    }
+      if(g_ToolMode == SELECT) {
+        // Not using boxes anymore, will use push buttons here
+        // in the mean time, I'll use what I have - SteadyButton
+        //for(int i = 0; i < NUM_BOXES; i++) {
+        //  g_pBox[i]->Draw();
+        //}
+      } 
+      else { // initialize tool manipulation class/code
+        int i;
+        switch(g_ToolMode) 
+          {
+          case TRANSLATE:
+            i = 0;
+            break;
+          case ROTATE:
+            i = 1;
+            break;
+          case STRETCH:
+            i = 2;
+            break;
+          }
+
+        // Temporary just to draw something for state
+        DrawTool(size, size, 0, i, size, 1);
+      }
+    }    
 
     // Draw tool selection panel
     if(g_UserMode == TOOL_SELECTION) {
-      // draw tool panel
+      // might handle this in shape manipulation mode and just make this
+      // another tool mode
     }
 
-    
+    // draw state
 	#ifdef USE_GLUT
 	glutSwapBuffers();
 	#endif
@@ -374,6 +405,22 @@ void glutKeyboard (unsigned char key, int x, int y)
 			g_fSmoothing = 0;
 		g_HandsGenerator.SetSmoothing(g_fSmoothing);
 		break;
+    case 'n':
+        // select mode (New) 
+        g_ToolMode = SELECT;
+        break;
+    case 't':
+        // translate mode 
+        g_ToolMode = TRANSLATE;
+        break;
+    case 'r':
+        // rotate mode 
+        g_ToolMode = ROTATE;
+        break;
+    case 'k':
+        // stretch mode (K) 
+        g_ToolMode = STRETCH;
+        break;
 	case 'e':
 		// end current session
 		g_pSessionManager->EndSession();
@@ -386,7 +433,7 @@ void glInit (int * pargc, char ** argv)
 	glutInit(pargc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
-	glutCreateWindow ("PrimeSense Nite Point Viewer");
+	glutCreateWindow ("Geonect");
 	//glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_NONE);
 
