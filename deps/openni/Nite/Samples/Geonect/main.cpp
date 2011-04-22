@@ -62,6 +62,14 @@ return (rc);						\
 #endif
 #endif
 
+typedef enum
+{
+    SELECT,
+	TRANSLATE,
+	ROTATE,
+	STRETCH
+} ToolMode;
+
 // Drawing functions
 void DrawLine(XnFloat fMinX, XnFloat fMinY, XnFloat fMinZ,
 			  XnFloat fMaxX, XnFloat fMaxY, XnFloat fMaxZ,
@@ -174,6 +182,8 @@ XnBool g_bPlayRecording = false;
 
 
 SessionState g_SessionState = NOT_IN_SESSION;
+ToolMode g_ToolMode = SELECT;
+XnBool g_bSelect = false;
 
 void CleanupExit()
 {
@@ -266,6 +276,7 @@ void XN_CALLBACK_TYPE MyBox_PointUpdate(const XnVHandPointContext*pContext, void
 void glutDisplay (void)
 {
 
+    const int size = 50;
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	// Setup the OpenGL viewpoint
@@ -295,10 +306,29 @@ void glutDisplay (void)
 		PrintSessionState(g_SessionState);
 	}
     
-    for(int i = 0; i < NUM_BOXES; i++) {
-      g_pBox[i]->Draw();
-    }
+    
 
+    // draw state
+    if(g_ToolMode == SELECT) {
+        for(int i = 0; i < NUM_BOXES; i++) {
+            g_pBox[i]->Draw();
+        }
+    } else {
+        int i;
+        switch(g_ToolMode) {
+            case TRANSLATE:
+                i = 0;
+                break;
+            case ROTATE:
+                i = 1;
+                break;
+            case STRETCH:
+                i = 2;
+                break;
+        }
+        // Temporary just to draw something for state
+        DrawTool(size, size, 0, i, size, 1);
+    }
     
 	#ifdef USE_GLUT
 	glutSwapBuffers();
@@ -344,18 +374,35 @@ void glutKeyboard (unsigned char key, int x, int y)
 			g_fSmoothing = 0;
 		g_HandsGenerator.SetSmoothing(g_fSmoothing);
 		break;
+    case 'n':
+        // select mode (New) 
+        g_ToolMode = SELECT;
+        break;
+    case 't':
+        // translate mode 
+        g_ToolMode = TRANSLATE;
+        break;
+    case 'r':
+        // rotate mode 
+        g_ToolMode = ROTATE;
+        break;
+    case 'k':
+        // stretch mode (K) 
+        g_ToolMode = STRETCH;
+        break;
 	case 'e':
 		// end current session
 		g_pSessionManager->EndSession();
 		break;
 	}
 }
+
 void glInit (int * pargc, char ** argv)
 {
 	glutInit(pargc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
-	glutCreateWindow ("PrimeSense Nite Point Viewer");
+	glutCreateWindow ("Geonect");
 	//glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_NONE);
 
@@ -436,12 +483,12 @@ int main(int argc, char ** argv)
     XnPoint3D ptMax, ptMin;
     ptMax.Z = 0;
     ptMin.Z = 0;
-    ptMin.X = GL_WIN_SIZE_X-TOOL_SIZE*2-100;  
-    ptMax.X = GL_WIN_SIZE_X-100;
+    ptMin.Y = GL_WIN_SIZE_Y/2-TOOL_SIZE;  
+    ptMax.Y = GL_WIN_SIZE_Y/2+TOOL_SIZE;
     for(int i = 0; i < NUM_BOXES; i++) {
       
-      ptMin.Y = 20 + i*2*TOOL_SIZE;
-      ptMax.Y = 20 + (i+1)*2*TOOL_SIZE;
+      ptMin.X = GL_WIN_SIZE_X/2 - NUM_BOXES*TOOL_SIZE + i*2*TOOL_SIZE;
+      ptMax.X = GL_WIN_SIZE_X/2 - NUM_BOXES*TOOL_SIZE + (i+1)*2*TOOL_SIZE;
       g_pBox[i] = new MyBox(ptMax, ptMin, i, TOOL_SIZE);
       g_pBox[i]->RegisterSelect(NULL, &MyBox_Select);
       g_pBox[i]->RegisterPointUpdate(NULL, &MyBox_PointUpdate);
