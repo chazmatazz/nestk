@@ -26,7 +26,8 @@
 #include <XnVHandPointContext.h>
 #include <XnVSessionManager.h>
 #include <XnVFlowRouter.h>
-#include <XnVSwipeDetector.h>
+#include <XnVCircleDetector.h>
+#include <XnVPushDetector.h>
 #include <XnVSelectableSlider1D.h>
 #include <XnVSteadyDetector.h>
 #include <XnVBroadcaster.h>
@@ -163,9 +164,12 @@ xn::GestureGenerator g_GestureGenerator;
 XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
 XnVBroadcaster* g_pBroadcaster;
+XnVCircleDetector*  g_pCircle;
 
-const int NUM_STEADY_BUTTONS = 4;
-SteadyButton* g_pSButton[NUM_STEADY_BUTTONS];
+const int NUM_SHAPE_BUTTONS = 4;
+const int NUM_TOOL_BUTTONS = 2;
+SteadyButton* g_pSButton[NUM_SHAPE_BUTTONS];
+SteadyButton* g_pTButton[NUM_TOOL_BUTTONS];
 
 // the drawer
 XnVPointDrawer* g_pDrawer;
@@ -204,7 +208,7 @@ XnBool g_bSelect = false;
 void CleanupExit()
 {
   /*	
-    for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+    for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
         delete g_pSButton[i];
     }
 
@@ -246,27 +250,26 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 	}
 }
 
+
 // Callback for the SteadyButton
 void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 {
   if(g_UserMode == SHAPE_SELECTION) {
     counter++;
     
-    SteadyButton* box = (SteadyButton*)(cxt);
-    box->SetSelected();
+    SteadyButton* button = (SteadyButton*)(cxt);
+    button->SetSelected();
     
     // Create object for this box
     // Automatically deselect the object
     // Add object to a list for tracking all objects being manupulated
     
-    // remove the shape selection panel
-    //delete [] g_pSButton;
     
     if(counter == DISPLAY_DELAY) {
       // Switch to manupulation mode
       g_UserMode = SHAPE_MANIPULATION;
       g_ToolMode = TRANSLATE;
-      for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+      for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
         g_pSButton[i]->SetUnselected();
       } 
       counter = 0;
@@ -279,9 +282,34 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 
   if(g_UserMode == TOOL_SELECTION) {
     // select tool
+    counter++;
+    
+    SteadyButton* button = (SteadyButton*)(cxt);
+    button->SetSelected();
+    
+    // Update the tool icon in the corner
+    // Automatically deselect the object
+    
+    if(counter == DISPLAY_DELAY) {
+      // Switch to manupulation mode
+      g_UserMode = SHAPE_MANIPULATION;
+      //g_ToolMode = button->id;
+      for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
+        g_pSButton[i]->SetUnselected();
+      } 
+      counter = 0;
+    }
   }
 
 }
+
+void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnBool bConfident, const XnVCircle* pCircle, void* pUserCxt)
+{
+  if(g_UserMode == SHAPE_MANIPULATION) {
+    g_UserMode = TOOL_SELECTION;
+  }
+}
+
 
 // this function is called each frame
 void glutDisplay (void)
@@ -319,7 +347,7 @@ void glutDisplay (void)
     
     // Draw the shape icons if in shape selection mode
     if(g_UserMode == SHAPE_SELECTION) {
-      for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+      for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
         g_pSButton[i]->Draw();
       }
     }
@@ -330,11 +358,11 @@ void glutDisplay (void)
       if(g_ToolMode == SELECT) {
         // Not using boxes anymore, will use push buttons here
         // in the mean time, I'll use what I have - SteadyButton
-        //for(int i = 0; i < NUM_BOXES; i++) {
-        //  g_pBox[i]->Draw();
-        //}
+        for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+          g_pTButton[i]->Draw();
+        }
       } 
-      else { // initialize tool manipulation class/code
+      else { // run tool manipulation class/code
         int i;
         switch(g_ToolMode) 
           {
@@ -358,6 +386,9 @@ void glutDisplay (void)
     if(g_UserMode == TOOL_SELECTION) {
       // might handle this in shape manipulation mode and just make this
       // another tool mode
+        for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+          g_pTButton[i]->Draw();
+        }
     }
 
     // draw state
@@ -473,22 +504,46 @@ void glInit (int * pargc, char ** argv)
 }
 #endif
 
+void initToolPanel() 
+{
+    // Register callback to the SteadyButton objects for their Select event.
+    XnPoint3D ptMax, ptMin;
+    int Xshift = (GL_WIN_SIZE_X-(2*TOOL_SIZE*NUM_TOOL_BUTTONS))/2;
+    printf("init %d tools", NUM_TOOL_BUTTONS);
+    ptMax.Z = 0;
+    ptMin.Z = 0;
+    ptMin.Y = GL_WIN_SIZE_Y-TOOL_SIZE*2-150;  
+    ptMax.Y = GL_WIN_SIZE_Y-150;
+    for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+      
+      ptMin.X = Xshift + i*2*TOOL_SIZE;
+      ptMax.X = Xshift + (i+1)*2*TOOL_SIZE;
+      g_pTButton[i] = new SteadyButton(ptMax, ptMin, i, TOOL_SIZE, g_DepthGenerator);
+      g_pTButton[i]->RegisterSelect(NULL, &SteadyButton_Select);
+      g_pSessionManager->AddListener(g_pSButton[i]);
+
+    }
+    printf("finished init tools");
+}
 
 void initShapePanel() 
 {
     // Register callback to the SteadyButton objects for their Select event.
     XnPoint3D ptMax, ptMin;
+    int Xshift = (GL_WIN_SIZE_X-(2*TOOL_SIZE*NUM_SHAPE_BUTTONS))/2;
+
     ptMax.Z = 0;
     ptMin.Z = 0;
-    ptMin.Y = GL_WIN_SIZE_Y-TOOL_SIZE*2-100;  
-    ptMax.Y = GL_WIN_SIZE_Y-100;
-    for(int i = 0; i < NUM_STEADY_BUTTONS; i++) {
+    ptMin.Y = GL_WIN_SIZE_Y-TOOL_SIZE*2-150;  
+    ptMax.Y = GL_WIN_SIZE_Y-150;
+    for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
       
-      ptMin.X = 200 + i*2*TOOL_SIZE;
-      ptMax.X = 200 + (i+1)*2*TOOL_SIZE;
+      ptMin.X = Xshift + i*2*TOOL_SIZE;
+      ptMax.X = Xshift + (i+1)*2*TOOL_SIZE;
       g_pSButton[i] = new SteadyButton(ptMax, ptMin, i, TOOL_SIZE, g_DepthGenerator);
       g_pSButton[i]->RegisterSelect(NULL, &SteadyButton_Select);
       g_pSessionManager->AddListener(g_pSButton[i]);
+
     }
 }
 
@@ -516,13 +571,17 @@ int main(int argc, char ** argv)
     CHECK_RC(rc, "SessionManager::Initialize");
     g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
     g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator); 
+	g_pCircle = new XnVCircleDetector;
     g_pBroadcaster = new XnVBroadcaster();
     g_pBroadcaster->AddListener(g_pDrawer);    
+    g_pBroadcaster->AddListener(g_pCircle);    
     g_pSessionManager->AddListener(g_pBroadcaster);
+    g_pCircle->RegisterCircle(NULL, CircleCB);    
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
-    
+
     initShapePanel();
+    initToolPanel();
 
     // Initialization done. Start generating
     rc = g_Context.StartGeneratingAll();
