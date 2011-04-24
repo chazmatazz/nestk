@@ -40,12 +40,12 @@ class SteadyButton : public XnVPointControl
   typedef void (XN_CALLBACK_TYPE *SelectCB)(void* cxt);
   
   // Create the SteadyButton
- SteadyButton(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, const int tool, 
+ SteadyButton(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, const int type, 
               const int size, xn::DepthGenerator depthGenerator) : 
   XnVPointControl("SteadyButton"),
     m_Bold(BoldNone), 
-    m_ButtonMode(ButtonNone),
-    m_tool(tool),
+    m_ButtonMode(ButtonInactive),
+    m_type(type),
     m_size(size),
     m_DepthGenerator(depthGenerator)  
 	{
@@ -106,6 +106,7 @@ class SteadyButton : public XnVPointControl
 
 	void SetButtonMode(ButtonMode mode) {m_ButtonMode = mode;}
 	void SetBold(BoldSide bold) {m_Bold = bold;}
+    int getType() {return m_type;}
 
 	// Draw the button, with its frame
 	void Draw()
@@ -157,7 +158,7 @@ class SteadyButton : public XnVPointControl
         
         DrawTool((ptTopLeft.X+ptBottomRight.X)/2, 
                 (ptTopLeft.Y+ptBottomRight.Y)/2, 
-                rotation, m_tool, m_size, 1);
+                rotation, m_type, m_size, 1);
         
 
 #if 0
@@ -206,15 +207,25 @@ class SteadyButton : public XnVPointControl
 
     void SetSelected() 
     {
+      printf("button %d is active\n", m_type);
       SELECTED_STATE = ButtonSelected;
       SetButtonMode(ButtonSelected);
     }
     void SetUnselected() 
     {
+      printf("button %d is active\n", m_type);
       SELECTED_STATE = ButtonUnselected;
       SetButtonMode(ButtonUnselected);
     }
-
+    void TurnOff() 
+    {
+      printf("button %d is off\n", m_type);
+      SetButtonMode(SteadyButton::ButtonNone);
+    }
+    XnBool isActive()
+    {
+      return !(m_ButtonMode == SteadyButton::ButtonNone);
+    }
 
 	// Register/Unregister for SteadyButton's event - Select
 	XnCallbackHandle RegisterSelect(void* UserContext, LeaveCB pCB)
@@ -261,26 +272,32 @@ private:
 	static void XN_CALLBACK_TYPE Broadcaster_OnActivate(void* cxt)
 	{
 		SteadyButton* button = (SteadyButton*)(cxt);
-		button->SetUnselected();
+        if(button->isActive()) {button->SetUnselected();}
 	}
 
 	static void XN_CALLBACK_TYPE Broadcaster_OnDeactivate(void* cxt)
 	{
 		SteadyButton* button = (SteadyButton*)(cxt);
-		button->SetButtonMode(SteadyButton::ButtonInactive);
+        if(button->isActive()) {
+          button->SetButtonMode(SteadyButton::ButtonInactive);
+        }
 	}
 
 	static void XN_CALLBACK_TYPE Broadcaster_OnPrimaryCreate(const XnVHandPointContext* hand, const XnPoint3D& ptFocus, void* cxt)
 	{
 		SteadyButton* button = (SteadyButton*)(cxt);
-        if(button->SELECTED_STATE == ButtonSelected) {button->SetSelected();}
-        else {button->SetUnselected();}
+        if(button->isActive()) {
+          if(button->SELECTED_STATE == ButtonSelected) {button->SetSelected();}
+          else {button->SetUnselected();}
+        }
 	}
 
 	static void XN_CALLBACK_TYPE Broadcaster_OnPrimaryDestroy(XnUInt32 nID, void* cxt)
 	{
 		SteadyButton* button = (SteadyButton*)(cxt);
-		button->SetButtonMode(SteadyButton::ButtonInactive);
+        if(button->isActive()) {
+          button->SetButtonMode(SteadyButton::ButtonInactive);
+        }
 	}
 
 
@@ -288,8 +305,10 @@ private:
 	static void XN_CALLBACK_TYPE Steady_OnSteady(XnFloat fVelocity, void* cxt)
 	{
 		SteadyButton* button = (SteadyButton*)(cxt);
-        button->SetSelected();
-        button->Select();
+        if(button->isActive()) {
+          button->SetSelected();
+          button->Select();
+        }
 	}
 
 	// Inform all - button selected
@@ -300,8 +319,7 @@ private:
 
 private:
     xn::DepthGenerator m_DepthGenerator;
-
-    int m_tool;
+    int m_type;
     int m_size;
 	BoldSide m_Bold;
 	ButtonMode m_ButtonMode;
