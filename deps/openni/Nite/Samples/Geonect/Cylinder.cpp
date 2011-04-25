@@ -1,6 +1,12 @@
-#include "StdAfx.h"
 #include "Cylinder.h"
+
+#if (XN_PLATFORM == XN_PLATFORM_MACOSX)
+#include <GLUT/glut.h>
+#else
+#include "StdAfx.h"
 #include <GL/glut.h>
+#endif
+
 
 Cylinder::Cylinder(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float length)
 {

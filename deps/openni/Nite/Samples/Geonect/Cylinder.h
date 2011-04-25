@@ -1,6 +1,12 @@
 #pragma once
 #include "shape.h"
+
+#if (XN_PLATFORM == XN_PLATFORM_MACOSX)
+#include <GLUT/glut.h>
+#else
+#include "StdAfx.h"
 #include <GL/glut.h>
+#endif
 
 class Cylinder :public Shape
 {

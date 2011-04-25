@@ -39,6 +39,11 @@
 
 // local headers
 #include "PointDrawer.h"
+#include "Shape.h"
+#include "RectPrism.h"
+
+#include <iostream>
+using namespace std;
 
 
 #define CHECK_RC(rc, what)                                      \
@@ -152,6 +157,14 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
         case TORUS:
             glutWireTorus(size/2, size, 8, 8);
             break;
+        case TRANSLATE:
+            // temp until tool representation
+            glutWireCube(size);
+            break;
+        case ROTATE: 
+            // temp until tool representation
+            glutWireSphere(size, 8, 8);
+            break;
     }
     glPopMatrix();
 }
@@ -159,7 +172,7 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 
 #include "SteadyButton.h"
 
-#define GL_WIN_SIZE_X 720
+#define GL_WIN_SIZE_X 640
 #define GL_WIN_SIZE_Y 480
 #define TOOL_SIZE 40
 #define COOLDOWN_FRAMES 5 
@@ -199,12 +212,11 @@ XnBool g_bQuit = false;
 XnBool g_bPlayRecording = false;
 int counter = 0;
 SessionState g_SessionState = NOT_IN_SESSION;
-
 UserMode g_UserMode = SHAPE_SELECTION;
 int g_Shape;
 int g_Tool;
 XnBool g_bSelect = false;
-
+RectPrism* rect;
 
 void CleanupExit()
 {
@@ -279,15 +291,23 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
       switch(g_Shape) {
         case CUBE:
           printf("Created shape CUBE!\n");
+          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
+                               0, 0, 50, 50, 50);
           break;
         case SPHERE:
           printf("Created shape SPHERE!\n");
+          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
+                               0, 0, 50, 50, 50);
           break;
         case CONE:
           printf("Created shape CONE!\n");
+          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
+                               0, 0, 50, 50, 50);
           break;
         case TORUS:
           printf("Created shape TORUS!\n");
+          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
+                               0, 0, 50, 50, 50);
           break;
       }
 
@@ -377,6 +397,8 @@ void glutDisplay (void)
 	glOrthof(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
 	#endif
 
+    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;
+
 	glDisable(GL_TEXTURE_2D);
 
 	if (!g_bPause)
@@ -397,19 +419,7 @@ void glutDisplay (void)
 
     // Draw the tool icon if in manupulation mode
     if(g_UserMode == SHAPE_MANIPULATION) {
-      int i;
-      switch(g_Tool) 
-        {
-        case TRANSLATE:
-          i = 0;
-          break;
-        case ROTATE:
-          i = 1;
-          break;
-        case STRETCH:
-          i = 2;
-          break;
-        }
+      rect->draw();
 
       // Temporary just to draw something for state
       DrawTool(size, size, 0, g_Tool, size, 1);
@@ -498,7 +508,7 @@ void glInit (int * pargc, char ** argv)
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
 	glutCreateWindow ("Geonect");
-	//glutFullScreen();
+    //glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_NONE);
 
     glClearColor(0, 0, 0, 0);

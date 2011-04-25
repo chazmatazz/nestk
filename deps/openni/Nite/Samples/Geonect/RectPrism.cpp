@@ -1,6 +1,12 @@
-#include "StdAfx.h"
 #include "RectPrism.h"
+
+#if (XN_PLATFORM == XN_PLATFORM_MACOSX)
+#include <GLUT/glut.h>
+#else
 #include <GL/glut.h>
+#include "StdAfx.h"
+#endif
+
 
 
 RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth)
@@ -17,12 +23,14 @@ RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float wi
 
 void RectPrism::draw(void)
 {
-	glLoadIdentity();
-	glTranslatef(0.0f,0.0f,-10.0f);
+  glPushMatrix();
+  //glLoadIdentity();
+    //	glTranslatef(0.0f,0.0f,-10.0f);
 	glTranslatef(this->xPos,this->yPos,this->zPos);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
 	drawBox();
+    glPopMatrix();
 }
 void RectPrism::drawHighlighted(void)
 {
