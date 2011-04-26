@@ -1,4 +1,5 @@
 #include "RectPrism.h"
+#include <XnCppWrapper.h>
 
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
 #include <GLUT/glut.h>
@@ -34,12 +35,13 @@ void RectPrism::draw(void)
 }
 void RectPrism::drawHighlighted(void)
 {
-	glLoadIdentity();
+	glPushMatrix();
 	glTranslatef(0.0f,0.0f,-10.0f);
 	glTranslatef(this->xPos,this->yPos,this->zPos);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
 	drawBoxH();
+    glPopMatrix();
 }
 void RectPrism::rotate(float xRot,float yRot)
 {
@@ -144,4 +146,6 @@ void RectPrism::drawBoxH(void)
 	glEnd();
 
 }
+
+
 RectPrism::~RectPrism(void) {}

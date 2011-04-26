@@ -41,6 +41,7 @@
 #include "PointDrawer.h"
 #include "Shape.h"
 #include "RectPrism.h"
+#include "ShapeDrawer.h"
 
 #include <iostream>
 using namespace std;
@@ -216,7 +217,7 @@ UserMode g_UserMode = SHAPE_SELECTION;
 int g_Shape;
 int g_Tool;
 XnBool g_bSelect = false;
-RectPrism* rect;
+GktShapeDrawer* g_pShapeDrawer;
 
 void CleanupExit()
 {
@@ -286,30 +287,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
       } 
 
       g_Shape = button->getType();    
-
-      // Create object for this button
-      switch(g_Shape) {
-        case CUBE:
-          printf("Created shape CUBE!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
-          break;
-        case SPHERE:
-          printf("Created shape SPHERE!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
-          break;
-        case CONE:
-          printf("Created shape CONE!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
-          break;
-        case TORUS:
-          printf("Created shape TORUS!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
-          break;
-      }
+      g_pShapeDrawer->AddShape(g_Shape);
 
       // Automatically deselect the object
       // Add object to a list for tracking all objects being manupulated
@@ -321,7 +299,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 
   // detect object selection on steady
   if(g_UserMode == SHAPE_MANIPULATION) {
-    // TODO?
+      //TODO?
   }
 
   
@@ -336,6 +314,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
     // Delay for highlighting time
     if(counter == DISPLAY_DELAY) {
       g_UserMode = SHAPE_MANIPULATION;
+        g_pShapeDrawer->SetActive(true);
       counter = 0;
 
       // deactivate the tool selection menu
@@ -366,6 +345,7 @@ void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleRea
   if(g_UserMode == SHAPE_MANIPULATION) {
     printf("open tool menu\n");
     g_UserMode = TOOL_SELECTION;
+      g_pShapeDrawer->SetActive(false);
     for (int i = 0; i < NUM_TOOL_BUTTONS; i++) {
       // Activate the button
       g_pTButton[i]->SetUnselected();
@@ -397,7 +377,7 @@ void glutDisplay (void)
 	glOrthof(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
 	#endif
 
-    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;
+//    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;
 
 	glDisable(GL_TEXTURE_2D);
 
@@ -417,9 +397,10 @@ void glutDisplay (void)
       }
     }
 
+    g_pShapeDrawer->Draw();
     // Draw the tool icon if in manupulation mode
     if(g_UserMode == SHAPE_MANIPULATION) {
-      rect->draw();
+        
 
       // Temporary just to draw something for state
       DrawTool(size, size, 0, g_Tool, size, 1);
@@ -623,6 +604,9 @@ int main(int argc, char ** argv)
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
 
+    g_pShapeDrawer = new GktShapeDrawer(g_DepthGenerator);
+    g_pBroadcaster->AddListener(g_pShapeDrawer);
+    
     initShapePanel();
     initToolPanel();
 
