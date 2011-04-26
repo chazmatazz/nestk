@@ -43,6 +43,9 @@
 #include "RectPrism.h"
 
 #include <iostream>
+//#include <stdlib.h>
+#include <jpeglib.h>
+#include <jerror.h>
 using namespace std;
 
 
@@ -113,6 +116,32 @@ void DrawLine(XnFloat fMinX, XnFloat fMinY, XnFloat fMinZ,
 #endif
 }
 
+void DrawTranslate(XnFloat center_x, XnFloat center_y, int size, 
+                   int width, double r, double g, double b)
+{
+  XnFloat columnWidth = size/8;
+  XnFloat arrowWidth = size/6;
+  XnFloat columnHeight = (size/4) + columnWidth;
+  XnFloat arrowHeight = size/2;
+
+  XnFloat x[] = { center_x, center_x+arrowWidth, center_x+columnWidth,
+                  center_x+columnWidth, center_x+columnHeight, center_x+columnHeight,
+                  center_x+arrowHeight, center_x+columnHeight, center_x+columnHeight,
+                  center_x+columnWidth, center_x+columnWidth, center_x+arrowWidth,
+                  center_x };
+  XnFloat y[] = { center_y-arrowHeight, center_y-columnHeight, center_y-columnHeight,
+                  center_y-columnWidth, center_y-columnWidth, center_y-arrowWidth,
+                  center_y, center_y+arrowWidth, center_y+columnWidth, 
+                  center_y+columnWidth, center_y+columnHeight, center_y+columnHeight,
+                  center_y+arrowHeight };
+
+  for(int i = 0; i < 12; i++) {
+    DrawLine(x[i], y[i], 0, x[i+1], y[i+1], 0, width, r, g, b);
+  }
+
+
+}
+
 void DrawFrame(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, int width, double r, double g, double b)
 {
 	XnPoint3D ptTopLeft = ptMins;
@@ -159,7 +188,8 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
             break;
         case TRANSLATE:
             // temp until tool representation
-            glutWireCube(size);
+            //DrawTranslate(center_x, center_y, size, width, r, g, b);
+            LoadJPEG("test.jpg");
             break;
         case ROTATE: 
             // temp until tool representation
@@ -217,6 +247,7 @@ int g_Shape;
 int g_Tool;
 XnBool g_bSelect = false;
 RectPrism* rect;
+Shape* S;
 
 void CleanupExit()
 {
@@ -291,12 +322,12 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
       switch(g_Shape) {
         case CUBE:
           printf("Created shape CUBE!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
+          S = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
                                0, 0, 50, 50, 50);
           break;
         case SPHERE:
           printf("Created shape SPHERE!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
+          S = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
                                0, 0, 50, 50, 50);
           break;
         case CONE:
@@ -397,8 +428,7 @@ void glutDisplay (void)
 	glOrthof(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
 	#endif
 
-    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;
-
+    
 	glDisable(GL_TEXTURE_2D);
 
 	if (!g_bPause)
@@ -419,10 +449,10 @@ void glutDisplay (void)
 
     // Draw the tool icon if in manupulation mode
     if(g_UserMode == SHAPE_MANIPULATION) {
-      rect->draw();
+      S->draw();
 
       // Temporary just to draw something for state
-      DrawTool(size, size, 0, g_Tool, size, 1);
+      DrawTool(20, 20, 0, g_Tool, size, 1);
     }
 
     // Draw tool selection panel
