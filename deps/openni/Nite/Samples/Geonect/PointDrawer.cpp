@@ -346,11 +346,6 @@ void XnVPointDrawer::Draw() const
 
 		glPointSize(8);
 		glDrawArrays(GL_POINTS, 0, 1);
-        
-        glPushMatrix();
-        glTranslatef(m_pfPositionBuffer[3*0], m_pfPositionBuffer[3*0+1], m_pfPositionBuffer[3*0+2]);
-        glutWireSphere(20, 8, 8);
-        glPopMatrix();
 		
         glFlush();
 	}

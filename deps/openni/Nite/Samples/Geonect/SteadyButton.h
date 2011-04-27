@@ -134,34 +134,18 @@ class SteadyButton : public XnVPointControl
 		
 		if(bFrame) {
 			DrawFrame(m_BoundingBox.LeftBottomNear, m_BoundingBox.RightTopFar, 5, rgba[0], rgba[1], rgba[2]);
-            rotation+=ROT_SPEED;
+            //rotation+=ROT_SPEED;
         }
 		XnPoint3D ptTopLeft = m_BoundingBox.LeftBottomNear;
 		XnPoint3D ptBottomRight = m_BoundingBox.RightTopFar;
 
-		// Top line
-		DrawLine(ptTopLeft.X+10, ptTopLeft.Y-10, 0,
-			ptBottomRight.X-10, ptTopLeft.Y-10, 0,
-			1, 1, m_Bold==BoldUp?0:1, 1);
-		// Right Line
-		DrawLine(ptBottomRight.X-10, ptTopLeft.Y-10, 0,
-			ptBottomRight.X-10, ptBottomRight.Y+10,0,
-			1, 1, m_Bold==BoldRight?0:1, 1);
-		// Bottom Line
-		DrawLine(ptBottomRight.X-10, ptBottomRight.Y+10,0,
-			ptTopLeft.X+10, ptBottomRight.Y+10,0,
-			1, 1, m_Bold==BoldDown?0:1, 1);
-		// Left Line
-		DrawLine(ptTopLeft.X+10, ptBottomRight.Y+10,0,
-			ptTopLeft.X+10, ptTopLeft.Y-10,0,
-			1, 1, m_Bold==BoldLeft?0:1, 1);
-        
         DrawTool((ptTopLeft.X+ptBottomRight.X)/2, 
                 (ptTopLeft.Y+ptBottomRight.Y)/2, 
                 rotation, m_type, m_size, 1);
-        
+                
 
 #if 0
+        /*
 		XnPoint3D ptTopLeft, ptTopRight, ptBottomRight, ptBottomLeft;
 
 		ptTopLeft.X = m_BoundingBox.LeftBottomNear.X-10;
@@ -179,22 +163,7 @@ class SteadyButton : public XnVPointControl
 		ptBottomLeft.X = m_BoundingBox.LeftBottomNear.X-10;
 		ptBottomLeft.Y = m_BoundingBox.LeftBottomNear.Y-10;
 		ptBottomLeft.Z = 0;
-
-
-		// Bottom line
-		DrawLine(ptBottomLeft, ptBottomRight,
-			5, 1, m_Bold==BoldDown?0:1, 1);
-		//			m_Bold==BoldUp?20:5);
-		// Right Line
-		DrawLine(ptBottomRight, ptTopRight,
-			5, 1, m_Bold==BoldRight?0:1, 1);
-		// top Line
-		DrawLine(ptTopRight, ptTopLeft,
-			5, 1, m_Bold==BoldUp?0:1, 1);
-		// Left Line
-		DrawLine(
-			ptTopLeft, ptBottomLeft,
-			5, 1, m_Bold==BoldLeft?0:1, 1);
+        */
 #endif
 	}
 

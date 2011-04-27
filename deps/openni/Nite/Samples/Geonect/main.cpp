@@ -41,6 +41,7 @@
 #include "PointDrawer.h"
 #include "Shape.h"
 #include "RectPrism.h"
+#include "ShapeDrawer.h"
 
 #include <iostream>
 //#include <stdlib.h>
@@ -75,19 +76,84 @@ using namespace std;
 
 
 #define CUBE 0
-#define SPHERE 1
-#define CONE 2
-#define TORUS 3
+#define CYLINDER 1
+#define SHAPE3 2
+#define SHAPE4 3
 #define TRANSLATE 4
 #define ROTATE 5
 #define STRETCH 6
-#define SELECT 7
+#define BEND 7
+
+GLuint texture[8];
 
 typedef enum {
-  SHAPE_SELECTION,
-  SHAPE_MANIPULATION,
-  TOOL_SELECTION,
+  SHAPE_SELECTION, // select a shape to work with from a menu
+  SHAPE_MANIPULATION, // shape object is created and being manipulated
+  TOOL_SELECTION, // select a tool from a menu to use in manupulating the shape
+  DETATCHED, // no shape objects are currently selected
 } UserMode;
+
+
+// load a 50x50 RGB .RAW file as a texture
+GLuint LoadTextureRAW( const char * filename, int wrap )
+{
+    GLuint texture;
+    int width, height;
+    void * data;
+    FILE * file;
+
+    // open texture data
+    file = fopen( filename, "rb" );
+    if ( file == NULL ) return 0;
+
+    // allocate buffer
+    width = 50;
+    height = 50;
+    data = malloc( width * height * 3 );
+
+    // read texture data
+    fread( data, width * height * 3, 1, file );
+    fclose( file );
+
+    // allocate a texture name
+    glGenTextures( 1, &texture );
+
+    // select our current texture
+    glBindTexture( GL_TEXTURE_2D, texture );
+
+    // select modulate to mix texture with color for shading
+    glTexEnvf( GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE );
+
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, 
+                 width, height, 0, GL_RGB, 
+                 GL_UNSIGNED_BYTE, data);
+
+    // when texture area is small, bilinear filter the closest mipmap
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER,
+                     GL_LINEAR_MIPMAP_NEAREST );
+    // when texture area is large, bilinear filter the first mipmap
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+
+    // if wrap is true, the texture wraps over at the edges (repeat)
+    //       ... false, the texture ends at the edges (clamp)
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S,
+                     wrap ? GL_REPEAT : GL_CLAMP );
+    glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T,
+                     wrap ? GL_REPEAT : GL_CLAMP );
+
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+    
+
+    // build our texture mipmaps
+    gluBuild2DMipmaps( GL_TEXTURE_2D, 3, width, height,
+                       GL_RGB, GL_UNSIGNED_BYTE, data );
+
+    // free buffer
+    free( data );
+
+    return texture;
+}
 
 // Drawing functions
 void DrawLine(XnFloat fMinX, XnFloat fMinY, XnFloat fMinZ,
@@ -114,32 +180,6 @@ void DrawLine(XnFloat fMinX, XnFloat fMinY, XnFloat fMinZ,
 	glFlush();
     
 #endif
-}
-
-void DrawTranslate(XnFloat center_x, XnFloat center_y, int size, 
-                   int width, double r, double g, double b)
-{
-  XnFloat columnWidth = size/8;
-  XnFloat arrowWidth = size/6;
-  XnFloat columnHeight = (size/4) + columnWidth;
-  XnFloat arrowHeight = size/2;
-
-  XnFloat x[] = { center_x, center_x+arrowWidth, center_x+columnWidth,
-                  center_x+columnWidth, center_x+columnHeight, center_x+columnHeight,
-                  center_x+arrowHeight, center_x+columnHeight, center_x+columnHeight,
-                  center_x+columnWidth, center_x+columnWidth, center_x+arrowWidth,
-                  center_x };
-  XnFloat y[] = { center_y-arrowHeight, center_y-columnHeight, center_y-columnHeight,
-                  center_y-columnWidth, center_y-columnWidth, center_y-arrowWidth,
-                  center_y, center_y+arrowWidth, center_y+columnWidth, 
-                  center_y+columnWidth, center_y+columnHeight, center_y+columnHeight,
-                  center_y+arrowHeight };
-
-  for(int i = 0; i < 12; i++) {
-    DrawLine(x[i], y[i], 0, x[i+1], y[i+1], 0, width, r, g, b);
-  }
-
-
 }
 
 void DrawFrame(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, int width, double r, double g, double b)
@@ -172,28 +212,45 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
     glLineWidth(width);
     glPushMatrix();
     glTranslatef(center_x, center_y, 0);
-    glRotatef(rotation, 0, 1, 0);
+    //glRotatef(rotation, 0, 1, 0);
     switch (i) {
         case CUBE:
             glutWireCube(size);
             break;
-        case SPHERE:
+        case CYLINDER:
+          glutWireCone(size, size, 8, 8);
+            break;
+        case SHAPE3:
             glutWireSphere(size, 8, 8);
             break;
-        case CONE:
-            glutWireCone(size, size, 8, 8);
-            break;
-        case TORUS:
+        case SHAPE4:
             glutWireTorus(size/2, size, 8, 8);
             break;
         case TRANSLATE:
-            // temp until tool representation
+          // Map texture for translate
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture[0]);	
+            glBegin (GL_QUADS);
+              glTexCoord2f (0.0, 0.0);
+              glVertex3f (0.0, 0.0, 0.0);
+              glTexCoord2f (1.0, 0.0);
+              glVertex3f (size, 0.0, 0.0);
+              glTexCoord2f (1.0, 1.0);
+              glVertex3f (size, size, 0.0);
+              glTexCoord2f (0.0, 1.0);
+              glVertex3f (0.0, size, 0.0);
+            glEnd ();
+		
+            glDisable(GL_TEXTURE_2D);
             //DrawTranslate(center_x, center_y, size, width, r, g, b);
-            LoadJPEG("test.jpg");
             break;
         case ROTATE: 
             // temp until tool representation
             glutWireSphere(size, 8, 8);
+            break;
+        case STRETCH:
+            break;
+        case BEND:
             break;
     }
     glPopMatrix();
@@ -204,7 +261,7 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 
 #define GL_WIN_SIZE_X 640
 #define GL_WIN_SIZE_Y 480
-#define TOOL_SIZE 40
+#define TOOL_SIZE 50
 #define COOLDOWN_FRAMES 5 
 #define DETECTION_DURATION 300
 #define MAXIMUM_VELOCITY .005
@@ -225,7 +282,7 @@ XnVBroadcaster* g_pBroadcaster;
 XnVCircleDetector*  g_pCircle;
 
 const int NUM_SHAPE_BUTTONS = 4;
-const int NUM_TOOL_BUTTONS = 2;
+const int NUM_TOOL_BUTTONS = 4;
 SteadyButton* g_pSButton[NUM_SHAPE_BUTTONS];
 SteadyButton* g_pTButton[NUM_TOOL_BUTTONS];
 
@@ -247,7 +304,8 @@ int g_Shape;
 int g_Tool;
 XnBool g_bSelect = false;
 RectPrism* rect;
-Shape* S;
+GktShapeDrawer* g_pShapeDrawer;
+int errorcase;
 
 void CleanupExit()
 {
@@ -322,25 +380,19 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
       switch(g_Shape) {
         case CUBE:
           printf("Created shape CUBE!\n");
-          S = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
           break;
-        case SPHERE:
-          printf("Created shape SPHERE!\n");
-          S = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
+        case CYLINDER:
+          printf("Created shape CYLINDER!\n");
           break;
-        case CONE:
-          printf("Created shape CONE!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
+        case SHAPE3:
+          printf("Created shape SHAPE3!\n");
           break;
-        case TORUS:
-          printf("Created shape TORUS!\n");
-          rect = new RectPrism(GL_WIN_SIZE_X/2, GL_WIN_SIZE_Y/2, 0,
-                               0, 0, 50, 50, 50);
+        case SHAPE4:
+          printf("Created shape SHAPE4!\n");
           break;
       }
+
+      g_pShapeDrawer->AddShape(g_Shape);
 
       // Automatically deselect the object
       // Add object to a list for tracking all objects being manupulated
@@ -352,7 +404,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 
   // detect object selection on steady
   if(g_UserMode == SHAPE_MANIPULATION) {
-    // TODO?
+      //TODO?
   }
 
   
@@ -367,6 +419,7 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
     // Delay for highlighting time
     if(counter == DISPLAY_DELAY) {
       g_UserMode = SHAPE_MANIPULATION;
+      g_pShapeDrawer->SetActive(true);
       counter = 0;
 
       // deactivate the tool selection menu
@@ -397,6 +450,7 @@ void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleRea
   if(g_UserMode == SHAPE_MANIPULATION) {
     printf("open tool menu\n");
     g_UserMode = TOOL_SELECTION;
+      g_pShapeDrawer->SetActive(false);
     for (int i = 0; i < NUM_TOOL_BUTTONS; i++) {
       // Activate the button
       g_pTButton[i]->SetUnselected();
@@ -408,7 +462,6 @@ void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleRea
 // this function is called each frame
 void glutDisplay (void)
 {
-
     const int size = 50;
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -416,7 +469,7 @@ void glutDisplay (void)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-    
+
     glMatrixMode(GL_MODELVIEW); // Select The Modelview Matrix
     glLoadIdentity(); // Reset The Modelview Matrix
 
@@ -428,8 +481,9 @@ void glutDisplay (void)
 	glOrthof(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
 	#endif
 
-    
-	glDisable(GL_TEXTURE_2D);
+//    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;
+
+	//glDisable(GL_TEXTURE_2D);
 
 	if (!g_bPause)
 	{
@@ -447,10 +501,9 @@ void glutDisplay (void)
       }
     }
 
+    g_pShapeDrawer->Draw();
     // Draw the tool icon if in manupulation mode
     if(g_UserMode == SHAPE_MANIPULATION) {
-      S->draw();
-
       // Temporary just to draw something for state
       DrawTool(20, 20, 0, g_Tool, size, 1);
     }
@@ -574,6 +627,9 @@ void glInit (int * pargc, char ** argv)
     glLightfv( GL_LIGHT0, GL_SPECULAR, specularLight );
     glMaterialfv( GL_FRONT, GL_SPECULAR, spectre );
     glMateriali( GL_FRONT, GL_SHININESS, 128 );
+
+    texture[0] = LoadTextureRAW("../../../textures/translate.raw", 0);
+
 }
 #endif
 
@@ -582,7 +638,6 @@ void initToolPanel()
     // Register callback to the SteadyButton objects for their Select event.
     XnPoint3D ptMax, ptMin;
     int Xshift = (GL_WIN_SIZE_X-(2*TOOL_SIZE*NUM_TOOL_BUTTONS))/2;
-    printf("init %d tools", NUM_TOOL_BUTTONS);
     ptMax.Z = 0;
     ptMin.Z = 0;
     ptMin.Y = GL_WIN_SIZE_Y-TOOL_SIZE*2-150;  
@@ -597,7 +652,6 @@ void initToolPanel()
       g_pSessionManager->AddListener(g_pTButton[i]);
 
     }
-    printf("finished init tools");
 }
 
 void initShapePanel() 
@@ -653,6 +707,9 @@ int main(int argc, char ** argv)
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
 
+    g_pShapeDrawer = new GktShapeDrawer(g_DepthGenerator);
+    g_pBroadcaster->AddListener(g_pShapeDrawer);
+    
     initShapePanel();
     initToolPanel();
 
