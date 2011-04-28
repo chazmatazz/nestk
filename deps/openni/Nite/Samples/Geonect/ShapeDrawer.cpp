@@ -12,18 +12,30 @@
 	#include "opengles.h"
 #endif
 
-
 // Constructor. Receives the number of previous positions to store per hand,
 // and a source for depth map
 GktShapeDrawer::GktShapeDrawer(xn::DepthGenerator depthGenerator) :
 	XnVPointControl("GktShapeDrawer"),
 	m_DepthGenerator(depthGenerator), 
     m_nHistorySize(2), 
-m_bActive(false),
+    m_bActive(false),
     m_Tool(TRANSLATE),
-m_CurrentShape(NULL)    
+    m_CurrentShape(NULL)    
 {
 	m_pfPositionBuffer = new XnFloat[m_nHistorySize*3];
+    m_pInnerFlowRouter = new XnVFlowRouter;
+    m_pSwipeDetector = new XnVSwipeDetector;
+    m_pSteadyDetector = new XnVSteadyDetector;
+    
+    // Swipe detector used as a dummy detector for the flow switch
+    // no selection can be made while the swipe detector is active
+    m_Broadcaster.AddListener(m_pInnerFlowRouter);
+    m_pInnerFlowRouter->SetActive(m_pSwipeDetector);
+    
+    // Listen to inner activateable's events:
+    m_pSteadyDetector->RegisterSteady(this, &ShapeSteady);
+    
+    
 }
 
 // Destructor. Clear all data structures
@@ -51,51 +63,65 @@ void GktShapeDrawer::SetTool(int tool)
 
 void GktShapeDrawer::AddShape(int shapeType)
 {
+    printf("Create shape initialized\n");
     Shape* shape;
     XnPoint3D ptProjective(m_History[GetPrimaryID()].front());
+    printf("get history point\n");
     m_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
+    printf("convert real to projective\n");
     ptProjective.Z = 0;
-    printf("AddShape Point (%f,%f,%f)", ptProjective.X, ptProjective.Y, ptProjective.Z);
+    printf("AddShape Point (%f,%f,%f)\n", ptProjective.X, ptProjective.Y, ptProjective.Z);
     
     // Create object for this button
     switch(shapeType) {
         case CUBE:
             printf("Created shape CUBE!\n");
             shape = new RectPrism(ptProjective.X, 
-                                                   ptProjective.Y, ptProjective.Z, 0, 0, 50, 50, 50);
+                                  ptProjective.Y, 
+                                  ptProjective.Z, 
+                                  0, 0, 50, 50, 50);
             break;
         case SPHERE:
             printf("Created shape SPHERE!\n");
             shape = new RectPrism(ptProjective.X, 
-                                                   ptProjective.Y, ptProjective.Z, 0, 0, 50, 50, 50);          break;
+                                  ptProjective.Y, 
+                                  ptProjective.Z, 
+                                  0, 0, 50, 50, 50);
+            break;
         case CONE:
             printf("Created shape CONE!\n");
             shape = new RectPrism(ptProjective.X, 
-                                                   ptProjective.Y, ptProjective.Z, 0, 0, 50, 50, 50);          break;
+                                  ptProjective.Y, 
+                                  ptProjective.Z, 
+                                  0, 0, 50, 50, 50);
+            break;
         case TORUS:
             printf("Created shape TORUS!\n");
             shape = new RectPrism(ptProjective.X, 
-                                                   ptProjective.Y, ptProjective.Z, 0, 0, 50, 50, 50);
+                                  ptProjective.Y, 
+                                  ptProjective.Z, 
+                                  0, 0, 50, 50, 50);
             break;
     }
 
-    
-    
     m_Shapes.push_front(shape);
     m_CurrentShape = shape;
     SetActive(true);
 }
 
+
 // Handle creation of a new hand
-static XnBool bShouldPrint = false;
+static XnBool bShouldPrint = true;
 void GktShapeDrawer::OnPointCreate(const XnVHandPointContext* cxt)
 {
+    printf("create point shapedrawer\n");
 	printf("** %d\n", cxt->nID);
 	// Create entry for the hand
 	m_History[cxt->nID].clear();
 	bShouldPrint = true;
 	OnPointUpdate(cxt);
 	bShouldPrint = true;
+    printf("Create point end sdrawer\n");
 }
 // Handle new position of an existing hand
 void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
@@ -114,7 +140,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
 		m_History[cxt->nID].pop_back();
 	bShouldPrint = false;
     
-    
+
     if(m_bActive) {
         if(!m_CurrentShape) {
             if(m_Shapes.size() > 0) {
@@ -144,7 +170,21 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
         
         
     }
-    
+    else if(m_CurrentShape){
+        // If this Drawer is inactive, check for selection of shape
+        // Check if hand position is close to the center of this shape
+      m_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
+      float xDiff = ptProjective.X - m_CurrentShape->getXPos();
+      float yDiff = ptProjective.Y - m_CurrentShape->getYPos();
+      if((xDiff < 50) && (xDiff > -50) && (yDiff < 50) && (yDiff > -50)) {
+        //m_CurrentShape = shapes[i];
+        m_pInnerFlowRouter->SetActive(m_pSteadyDetector);
+        printf("Rollover shape\n");
+      }
+      else {
+        m_pInnerFlowRouter->SetActive(m_pSwipeDetector);
+      }
+    }    
 }
 
 // Handle destruction of an existing hand
@@ -172,9 +212,13 @@ void GktShapeDrawer::Update(XnVMessage* pMessage)
 {
 	// PointControl's Update calls all callbacks for each hand
 	XnVPointControl::Update(pMessage);
+    m_Broadcaster.Update(pMessage);
 
 	if (m_bActive)
 	{
 		Draw();
 	}
 }
+
+
+

@@ -147,5 +147,4 @@ void RectPrism::drawBoxH(void)
 
 }
 
-
 RectPrism::~RectPrism(void) {}

@@ -42,8 +42,7 @@ class SteadyButton : public XnVPointControl
   // Create the SteadyButton
  SteadyButton(const XnPoint3D& ptMins, const XnPoint3D& ptMaxs, const int type, 
               const int size, xn::DepthGenerator depthGenerator) : 
-  XnVPointControl("SteadyButton"),
-    m_Bold(BoldNone), 
+    XnVPointControl("SteadyButton"),
     m_ButtonMode(ButtonInactive),
     m_type(type),
     m_size(size),
@@ -70,9 +69,6 @@ class SteadyButton : public XnVPointControl
 		RegisterPrimaryPointCreate(this, &Broadcaster_OnPrimaryCreate);
 		RegisterPrimaryPointDestroy(this, &Broadcaster_OnPrimaryDestroy);
 
-        // Register PointControl notifications
-        //this->RegisterPointUpdate(this, &OnPointUpdate);
-
 		// Listen to inner activateable's events:
 		m_pSteadyDetector->RegisterSteady(this, &Steady_OnSteady);
 	}
@@ -81,7 +77,8 @@ class SteadyButton : public XnVPointControl
 	{
       m_Broadcaster.RemoveListener(m_pInnerFlowRouter);
       m_Broadcaster.RemoveListener(m_pSteadyDetector);
-      
+      m_Broadcaster.RemoveListener(m_pSwipeDetector);
+
       delete m_pInnerFlowRouter;
       delete m_pSteadyDetector;
       delete &m_Broadcaster;
@@ -95,17 +92,7 @@ class SteadyButton : public XnVPointControl
 		ButtonInactive
 	} ButtonMode;
 
-	// Affects the color of each side in drawing
-	typedef enum {
-		BoldNone,
-		BoldUp,
-		BoldDown,
-		BoldLeft,
-		BoldRight
-	} BoldSide;
-
 	void SetButtonMode(ButtonMode mode) {m_ButtonMode = mode;}
-	void SetBold(BoldSide bold) {m_Bold = bold;}
     int getType() {return m_type;}
 
 	// Draw the button, with its frame
@@ -134,45 +121,26 @@ class SteadyButton : public XnVPointControl
 		
 		if(bFrame) {
 			DrawFrame(m_BoundingBox.LeftBottomNear, m_BoundingBox.RightTopFar, 5, rgba[0], rgba[1], rgba[2]);
-            //rotation+=ROT_SPEED;
         }
 		XnPoint3D ptTopLeft = m_BoundingBox.LeftBottomNear;
 		XnPoint3D ptBottomRight = m_BoundingBox.RightTopFar;
 
-        DrawTool((ptTopLeft.X+ptBottomRight.X)/2, 
-                (ptTopLeft.Y+ptBottomRight.Y)/2, 
-                rotation, m_type, m_size, 1);
+        DrawTool(ptBottomRight.X, ptBottomRight.Y, 
+                rotation, m_type, m_size*2, 1);
                 
 
-#if 0
-        /*
-		XnPoint3D ptTopLeft, ptTopRight, ptBottomRight, ptBottomLeft;
-
-		ptTopLeft.X = m_BoundingBox.LeftBottomNear.X-10;
-		ptTopLeft.Y = m_BoundingBox.RightTopFar.Y+10;
-		ptTopLeft.Z = 0;
-
-		ptTopRight.X = m_BoundingBox.RightTopFar.X+10;
-		ptTopRight.Y = m_BoundingBox.RightTopFar.Y+10;
-		ptTopRight.Z = 0;
-
-		ptBottomRight.X = m_BoundingBox.RightTopFar.X+10;
-		ptBottomRight.Y = m_BoundingBox.LeftBottomNear.Y-10;
-		ptBottomRight.Z = 0;
-
-		ptBottomLeft.X = m_BoundingBox.LeftBottomNear.X-10;
-		ptBottomLeft.Y = m_BoundingBox.LeftBottomNear.Y-10;
-		ptBottomLeft.Z = 0;
-        */
-#endif
 	}
 
 
 	// Change flow state to steady to see if there is a selection of this button
-	void SetSteadyActive() {m_pInnerFlowRouter->SetActive(m_pSteadyDetector);}
+	void SetSteadyActive() {
+      m_pInnerFlowRouter->SetActive(m_pSteadyDetector);
+    }
 
     // Change flow away from steady, no selection can be made
-	void SetSwipeActive() {m_pInnerFlowRouter->SetActive(m_pSwipeDetector);}
+	void SetSwipeActive() {
+      m_pInnerFlowRouter->SetActive(m_pSwipeDetector);
+    }
 
     void SetSelected() 
     {
@@ -185,11 +153,13 @@ class SteadyButton : public XnVPointControl
       printf("button %d is active\n", m_type);
       SELECTED_STATE = ButtonUnselected;
       SetButtonMode(ButtonUnselected);
+      SetSwipeActive();
     }
     void TurnOff() 
     {
       printf("button %d is off\n", m_type);
       SetButtonMode(SteadyButton::ButtonNone);
+      SetSwipeActive();
     }
     XnBool isActive()
     {
@@ -197,7 +167,7 @@ class SteadyButton : public XnVPointControl
     }
 
 	// Register/Unregister for SteadyButton's event - Select
-	XnCallbackHandle RegisterSelect(void* UserContext, LeaveCB pCB)
+	XnCallbackHandle RegisterSelect(void* UserContext, SelectCB pCB)
 	{
 		XnCallbackHandle handle;
 		m_SelectCBs.Register(pCB, this, &handle);
@@ -225,12 +195,12 @@ class SteadyButton : public XnVPointControl
       if(ptProjective.X < m_BoundingBox.LeftBottomNear.X &&
          ptProjective.Y < m_BoundingBox.LeftBottomNear.Y &&
          ptProjective.X > m_BoundingBox.RightTopFar.X &&
-         ptProjective.Y > m_BoundingBox.RightTopFar.Y)
+         ptProjective.Y > m_BoundingBox.RightTopFar.Y && 
+         isActive())
       {
         // Allows selection of this box if hand is steady
         SetSteadyActive();
       }
-          
       else {SetSwipeActive();};
     }
 
@@ -274,6 +244,7 @@ private:
 	static void XN_CALLBACK_TYPE Steady_OnSteady(XnFloat fVelocity, void* cxt)
 	{
 		SteadyButton* button = (SteadyButton*)(cxt);
+        //printf("Steady on Steady - button %d\n", button->getType());
         if(button->isActive()) {
           button->SetSelected();
           button->Select();
@@ -290,7 +261,6 @@ private:
     xn::DepthGenerator m_DepthGenerator;
     int m_type;
     int m_size;
-	BoldSide m_Bold;
 	ButtonMode m_ButtonMode;
 
 	XnVFlowRouter* m_pInnerFlowRouter;

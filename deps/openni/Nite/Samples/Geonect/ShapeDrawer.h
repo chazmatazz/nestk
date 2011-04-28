@@ -4,6 +4,10 @@
 #include <map>
 #include <list>
 #include <XnCppWrapper.h>
+#include <XnVFlowRouter.h>
+#include <XnVSteadyDetector.h>
+#include <XnVSwipeDetector.h>
+#include <XnVBroadcaster.h>
 #include <XnVPointControl.h>
 #include "Shape.h"
 #include "RectPrism.h"
@@ -59,7 +63,19 @@ public:
 	void SetTool(int tool);
     
     void AddShape(int shapeType);
+
 protected:
+    static void XN_CALLBACK_TYPE ShapeSteady(XnFloat fVelocity, void* cxt) {
+      printf("Steady detected for shape\n");
+      GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
+      drawer->SetActive(true);
+    }
+    
+   XnVFlowRouter* m_pInnerFlowRouter;
+	XnVSwipeDetector* m_pSwipeDetector;
+	XnVSteadyDetector* m_pSteadyDetector;
+	XnVBroadcaster m_Broadcaster;
+
 	// Number of previous position to store for each hand
 	XnUInt32 m_nHistorySize;
 	// previous positions per hand

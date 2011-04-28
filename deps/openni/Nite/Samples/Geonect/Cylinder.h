@@ -18,6 +18,11 @@ public:
 	void rotate(float xRot,float yRot);
 	void displace(float x, float y, float z);
 	void resize(float width, float height, float depth);
+    float getXPos(void) { return xPos;}
+    float getYPos(void) { return yPos;}
+    float getZPos(void) { return zPos;}
+
+
 private:
 	GLUquadricObj *quadric;
 	float xPos,yPos,zPos;
