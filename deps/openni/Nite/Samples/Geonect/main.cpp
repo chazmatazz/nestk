@@ -107,8 +107,8 @@ GLuint LoadTextureRAW( const char * filename, int wrap )
     if ( file == NULL ) return 0;
 
     // allocate buffer
-    width = 50;
-    height = 50;
+    width = 64;
+    height = 64;
     data = malloc( width * height * 3 );
 
     // read texture data
@@ -213,18 +213,47 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
     glPushMatrix();
     glTranslatef(center_x, center_y, 0);
     //glRotatef(rotation, 0, 1, 0);
+
     switch (i) {
         case CUBE:
-            glutWireCube(size);
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture[4]);	
+            glBegin (GL_QUADS);
+              glTexCoord2f (0.0, 0.0);
+              glVertex3f (0.0, 0.0, 0.0);
+              glTexCoord2f (1.0, 0.0);
+              glVertex3f (size, 0.0, 0.0);
+              glTexCoord2f (1.0, 1.0);
+              //glTexCoord2f (0.0, 1.0);
+              glVertex3f (size, size, 0.0);
+              glTexCoord2f (0.0, 1.0);
+              //glTexCoord2f (1.0, 1.0);
+              glVertex3f (0.0, size, 0.0);
+            glEnd ();
+		
+            glDisable(GL_TEXTURE_2D);
             break;
         case CYLINDER:
-          glutWireCone(size, size, 8, 8);
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture[5]);	
+            glBegin (GL_QUADS);
+              glTexCoord2f (0.0, 0.0);
+              glVertex3f (0.0, 0.0, 0.0);
+              glTexCoord2f (1.0, 0.0);
+              glVertex3f (size, 0.0, 0.0);
+              glTexCoord2f (1.0, 1.0);
+              //glTexCoord2f (0.0, 1.0);
+              glVertex3f (size, size, 0.0);
+              glTexCoord2f (0.0, 1.0);
+              //glTexCoord2f (1.0, 1.0);
+              glVertex3f (0.0, size, 0.0);
+            glEnd ();
+		
+            glDisable(GL_TEXTURE_2D);
             break;
         case SHAPE3:
-            glutWireSphere(size, 8, 8);
             break;
         case SHAPE4:
-            glutWireTorus(size/2, size, 8, 8);
             break;
         case TRANSLATE:
           // Map texture for translate
@@ -236,8 +265,10 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
               glTexCoord2f (1.0, 0.0);
               glVertex3f (size, 0.0, 0.0);
               glTexCoord2f (1.0, 1.0);
+              //glTexCoord2f (0.0, 1.0);
               glVertex3f (size, size, 0.0);
               glTexCoord2f (0.0, 1.0);
+              //glTexCoord2f (1.0, 1.0);
               glVertex3f (0.0, size, 0.0);
             glEnd ();
 		
@@ -246,11 +277,58 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
             break;
         case ROTATE: 
             // temp until tool representation
-            glutWireSphere(size, 8, 8);
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture[1]);	
+            glBegin (GL_QUADS);
+              glTexCoord2f (0.0, 0.0);
+              glVertex3f (0.0, 0.0, 0.0);
+              glTexCoord2f (1.0, 0.0);
+              glVertex3f (size, 0.0, 0.0);
+              glTexCoord2f (1.0, 1.0);
+              //glTexCoord2f (0.0, 1.0);
+              glVertex3f (size, size, 0.0);
+              glTexCoord2f (0.0, 1.0);
+              //glTexCoord2f (1.0, 1.0);
+              glVertex3f (0.0, size, 0.0);
+            glEnd ();
+		
+            glDisable(GL_TEXTURE_2D);
             break;
         case STRETCH:
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture[2]);	
+            glBegin (GL_QUADS);
+              glTexCoord2f (0.0, 0.0);
+              glVertex3f (0.0, 0.0, 0.0);
+              glTexCoord2f (1.0, 0.0);
+              glVertex3f (size, 0.0, 0.0);
+              glTexCoord2f (1.0, 1.0);
+              //glTexCoord2f (0.0, 1.0);
+              glVertex3f (size, size, 0.0);
+              glTexCoord2f (0.0, 1.0);
+              //glTexCoord2f (1.0, 1.0);
+              glVertex3f (0.0, size, 0.0);
+            glEnd ();
+		
+            glDisable(GL_TEXTURE_2D);
             break;
         case BEND:
+            glEnable(GL_TEXTURE_2D);
+            glBindTexture(GL_TEXTURE_2D, texture[3]);	
+            glBegin (GL_QUADS);
+              glTexCoord2f (0.0, 0.0);
+              glVertex3f (0.0, 0.0, 0.0);
+              glTexCoord2f (1.0, 0.0);
+              glVertex3f (size, 0.0, 0.0);
+              glTexCoord2f (1.0, 1.0);
+              //glTexCoord2f (0.0, 1.0);
+              glVertex3f (size, size, 0.0);
+              glTexCoord2f (0.0, 1.0);
+              //glTexCoord2f (1.0, 1.0);
+              glVertex3f (0.0, size, 0.0);
+            glEnd ();
+		
+            glDisable(GL_TEXTURE_2D);
             break;
     }
     glPopMatrix();
@@ -280,6 +358,8 @@ XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
 XnVBroadcaster* g_pBroadcaster;
 XnVCircleDetector*  g_pCircle;
+XnVPushDetector* g_pPush;
+XnVSteadyDetector* g_pSteadyDetector;
 
 const int NUM_SHAPE_BUTTONS = 4;
 const int NUM_TOOL_BUTTONS = 4;
@@ -352,7 +432,6 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 	}
 }
 
-
 // Callback for the SteadyButton
 void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 {
@@ -369,30 +448,20 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
     if(counter == DISPLAY_DELAY) {
       counter = 0;
 
+      g_Shape = button->getType();    
+      g_pShapeDrawer->AddShape(g_Shape);
+
       // deactivate the shape menu
       for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
+        //g_pSessionManager->RemoveListener(g_pSButton[i]);
         g_pSButton[i]->TurnOff();
       } 
+      // deactivate the tool selection menu
+      for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+        //g_pSessionManager->RemoveListener(g_pTButton[i]);
+        g_pTButton[i]->TurnOff();
+      } 
 
-      g_Shape = button->getType();    
-
-      // Create object for this button
-      switch(g_Shape) {
-        case CUBE:
-          printf("Created shape CUBE!\n");
-          break;
-        case CYLINDER:
-          printf("Created shape CYLINDER!\n");
-          break;
-        case SHAPE3:
-          printf("Created shape SHAPE3!\n");
-          break;
-        case SHAPE4:
-          printf("Created shape SHAPE4!\n");
-          break;
-      }
-
-      g_pShapeDrawer->AddShape(g_Shape);
 
       // Automatically deselect the object
       // Add object to a list for tracking all objects being manupulated
@@ -403,8 +472,8 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 
 
   // detect object selection on steady
-  if(g_UserMode == SHAPE_MANIPULATION) {
-      //TODO?
+  if(g_UserMode == DETATCHED) {
+      // Select object
   }
 
   
@@ -422,12 +491,17 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
       g_pShapeDrawer->SetActive(true);
       counter = 0;
 
+      g_Tool = button->getType();    
+
       // deactivate the tool selection menu
       for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
         g_pTButton[i]->TurnOff();
       } 
-
-      g_Tool = button->getType();    
+      // deactivate the tool selection menu
+      for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
+        //g_pSessionManager->RemoveListener(g_pSButton[i]);
+        g_pSButton[i]->TurnOff();
+      } 
 
       // Update the tool icon in the corner
       switch(g_Tool) {
@@ -450,13 +524,28 @@ void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleRea
   if(g_UserMode == SHAPE_MANIPULATION) {
     printf("open tool menu\n");
     g_UserMode = TOOL_SELECTION;
-      g_pShapeDrawer->SetActive(false);
+    g_pShapeDrawer->SetActive(false);
     for (int i = 0; i < NUM_TOOL_BUTTONS; i++) {
       // Activate the button
+      g_pSessionManager->AddListener(g_pTButton[i]);
       g_pTButton[i]->SetUnselected();
     }
   }
 }
+
+// Callback for the Push event
+void XN_CALLBACK_TYPE Drop(XnFloat fVelocity, XnFloat fAngle, void* UserCxt)
+{
+  printf("Drop detected!\n");
+
+  if(g_UserMode == SHAPE_MANIPULATION){
+    // Disable movement of the shape object when dropped
+    g_pShapeDrawer->SetActive(false);
+    g_UserMode == DETATCHED;
+  }
+
+}
+
 
 
 // this function is called each frame
@@ -494,6 +583,9 @@ void glutDisplay (void)
 		PrintSessionState(g_SessionState);
 	}
     
+    g_pShapeDrawer->Draw();
+
+
     // Draw the shape icons if in shape selection mode
     if(g_UserMode == SHAPE_SELECTION) {
       for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
@@ -501,7 +593,6 @@ void glutDisplay (void)
       }
     }
 
-    g_pShapeDrawer->Draw();
     // Draw the tool icon if in manupulation mode
     if(g_UserMode == SHAPE_MANIPULATION) {
       // Temporary just to draw something for state
@@ -629,6 +720,11 @@ void glInit (int * pargc, char ** argv)
     glMateriali( GL_FRONT, GL_SHININESS, 128 );
 
     texture[0] = LoadTextureRAW("../../../textures/translate.raw", 0);
+    texture[1] = LoadTextureRAW("../../../textures/rotate.raw", 0);
+    texture[2] = LoadTextureRAW("../../../textures/stretch.raw", 0);
+    texture[3] = LoadTextureRAW("../../../textures/Bend.raw", 0);
+    texture[4] = LoadTextureRAW("../../../textures/cube.raw", 0);
+    texture[5] = LoadTextureRAW("../../../textures/cylinder.raw", 0);
 
 }
 #endif
@@ -653,6 +749,7 @@ void initToolPanel()
 
     }
 }
+
 
 void initShapePanel() 
 {
@@ -692,6 +789,7 @@ int main(int argc, char ** argv)
     rc = g_Context.FindExistingNode(XN_NODE_TYPE_GESTURE, g_GestureGenerator);
     CHECK_RC(rc, "Find gesture generator");
     
+    printf("creat nite objects\n");
     // Create NITE objects
     g_pSessionManager = new XnVSessionManager;
     rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
@@ -699,17 +797,22 @@ int main(int argc, char ** argv)
     g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
     g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator); 
 	g_pCircle = new XnVCircleDetector;
+    g_pPush = new XnVPushDetector;
     g_pBroadcaster = new XnVBroadcaster();
     g_pBroadcaster->AddListener(g_pDrawer);    
     g_pBroadcaster->AddListener(g_pCircle);    
+    g_pBroadcaster->AddListener(g_pPush);    
     g_pSessionManager->AddListener(g_pBroadcaster);
     g_pCircle->RegisterNoCircle(NULL, CircleCB);    
+    g_pPush->RegisterPush(NULL, Drop);    
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
-
+    
+    printf("shape drawe init\n");
     g_pShapeDrawer = new GktShapeDrawer(g_DepthGenerator);
     g_pBroadcaster->AddListener(g_pShapeDrawer);
     
+    printf("init panels\n");
     initShapePanel();
     initToolPanel();
 

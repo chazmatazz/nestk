@@ -1,16 +1,13 @@
-#ifdef USE_GLUT
+#include "RectPrism.h"
+#include <XnCppWrapper.h>
+
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
 #include <GLUT/glut.h>
 #else
 #include <GL/glut.h>
 #include "StdAfx.h"
 #endif
-#else
-#include "opengles.h"
-#endif
 
-
-#include "RectPrism.h"
 
 
 RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth)

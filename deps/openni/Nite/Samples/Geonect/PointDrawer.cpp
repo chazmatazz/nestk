@@ -69,12 +69,14 @@ void XnVPointDrawer::SetFrameID(XnBool bFrameID)
 static XnBool bShouldPrint = false;
 void XnVPointDrawer::OnPointCreate(const XnVHandPointContext* cxt)
 {
+    printf("point creat pdraw\n");
 	printf("** %d\n", cxt->nID);
 	// Create entry for the hand
 	m_History[cxt->nID].clear();
 	bShouldPrint = true;
 	OnPointUpdate(cxt);
 	bShouldPrint = true;
+    printf("end point create pdraw\n");
 }
 // Handle new position of an existing hand
 void XnVPointDrawer::OnPointUpdate(const XnVHandPointContext* cxt)

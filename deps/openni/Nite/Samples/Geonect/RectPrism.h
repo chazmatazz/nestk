@@ -11,6 +11,9 @@ public:
 	void displace(float x, float y, float z);
 	void resize(float width, float height, float depth);
 	float getDist(float a, float b, float c);
+    float getXPos(void) { return xPos;}
+    float getYPos(void) { return yPos;}
+    float getZPos(void) { return zPos;}
 private:
 	float xPos,yPos,zPos;
 	float xRot,yRot;
@@ -18,4 +21,3 @@ private:
 	void drawBox(void);
 	void drawBoxH(void);
 };
-

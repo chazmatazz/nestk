@@ -4,6 +4,10 @@
 #include <map>
 #include <list>
 #include <XnCppWrapper.h>
+#include <XnVFlowRouter.h>
+#include <XnVSteadyDetector.h>
+#include <XnVSwipeDetector.h>
+#include <XnVBroadcaster.h>
 #include <XnVPointControl.h>
 #include "Shape.h"
 #include "RectPrism.h"
@@ -50,8 +54,9 @@ public:
 	 * Draw the points, each with its own color.
 	 */
 	void Draw() const;
-
-
+    /**
+     * Set the ShapeDrawer to active - this means we draw it
+     */
 	void SetActive(XnBool active);
 	/**
 	 * Change mode - set the active tool
@@ -59,7 +64,22 @@ public:
 	void SetTool(int tool);
     
     void AddShape(int shapeType);
+
 protected:
+    static void XN_CALLBACK_TYPE ShapeSteady(XnFloat fVelocity, void* cxt) {
+      printf("Steady detected for shape\n");
+      GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
+     drawer->m_CurrentShape = drawer->m_ProspectiveShape; // warning: race condition?
+        // switch back to swipe detector
+        drawer->m_pInnerFlowRouter->SetActive(drawer->m_pSwipeDetector);
+        
+    }
+    
+   XnVFlowRouter* m_pInnerFlowRouter;
+	XnVSwipeDetector* m_pSwipeDetector;
+	XnVSteadyDetector* m_pSteadyDetector;
+	XnVBroadcaster m_Broadcaster;
+
 	// Number of previous position to store for each hand
 	XnUInt32 m_nHistorySize;
 	// previous positions per hand
@@ -68,11 +88,12 @@ protected:
 	xn::DepthGenerator m_DepthGenerator;
 	XnFloat* m_pfPositionBuffer;
 
-    XnBool m_bActive;
-	int m_Tool;
+    XnBool m_bActive; // if the shapedrawer is active
+	int m_Tool; // the tool that we're using
     
-    std::list<Shape*> m_Shapes;
-    Shape* m_CurrentShape;
+    std::list<Shape*> m_Shapes; // the list of shapes in the shapedrawer
+    Shape* m_ProspectiveShape; // the shape that we are hovering
+    Shape* m_CurrentShape; // the selected shape (after Steady)
 };
 
 #endif
