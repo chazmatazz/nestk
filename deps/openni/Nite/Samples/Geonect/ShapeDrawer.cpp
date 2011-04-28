@@ -12,6 +12,8 @@
 	#include "opengles.h"
 #endif
 
+#define MAX_DIST 100
+
 
 // Constructor. Receives the number of previous positions to store per hand,
 // and a source for depth map
@@ -117,8 +119,24 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
     
     if(m_bActive) {
         if(!m_CurrentShape) {
-            if(m_Shapes.size() > 0) {
-                m_CurrentShape = m_Shapes.front();
+            XnPoint3D curr = m_History[cxt->nID].front();
+            XnFloat min_dist;
+            Shape* min_shape = 0;
+            
+            std::list<Shape*>::const_iterator ShapeIterator;
+            for (ShapeIterator = m_Shapes.begin();
+                 ShapeIterator != m_Shapes.end();
+                 ++ShapeIterator)
+            {
+                Shape* shape = *ShapeIterator;
+                XnFloat dist = shape->getDist(curr.X, curr.Y, curr.Z);
+                if(shape == m_Shapes.front() || (dist < MAX_DIST && dist < min_dist)) {
+                    min_dist = dist;
+                    min_shape = shape;
+                }
+            }
+            if(min_shape != 0) {
+                m_CurrentShape = min_shape;
             }
         } else {
             XnPoint3D a = m_History[cxt->nID].front();
@@ -159,11 +177,21 @@ void GktShapeDrawer::OnPointDestroy(XnUInt32 nID)
 
 void GktShapeDrawer::Draw() const
 {
-    if(m_Shapes.size() > 0 ) {
-       
-        m_Shapes.front()->draw();
-    }  
-        glFlush();
+    std::list<Shape*>::const_iterator ShapeIterator;
+    for (ShapeIterator = m_Shapes.begin();
+         ShapeIterator != m_Shapes.end();
+         ++ShapeIterator)
+	{
+        Shape* shape = *ShapeIterator;
+        if(m_CurrentShape == shape) {
+           
+            shape->drawHighlighted();
+        }  
+        else {
+            shape->draw();
+        }
+    }
+    glFlush();
 	
 }
 

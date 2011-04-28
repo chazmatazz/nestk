@@ -1,13 +1,16 @@
-#include "RectPrism.h"
-#include <XnCppWrapper.h>
-
+#ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
 #include <GLUT/glut.h>
 #else
 #include <GL/glut.h>
 #include "StdAfx.h"
 #endif
+#else
+#include "opengles.h"
+#endif
 
+
+#include "RectPrism.h"
 
 
 RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth)
@@ -24,14 +27,13 @@ RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float wi
 
 void RectPrism::draw(void)
 {
-  glPushMatrix();
-  //glLoadIdentity();
-    //	glTranslatef(0.0f,0.0f,-10.0f);
+	glPushMatrix();
+	glTranslatef(0.0f,0.0f,-10.0f);
 	glTranslatef(this->xPos,this->yPos,this->zPos);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
 	drawBox();
-    glPopMatrix();
+	glPopMatrix();
 }
 void RectPrism::drawHighlighted(void)
 {
@@ -41,7 +43,7 @@ void RectPrism::drawHighlighted(void)
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
 	drawBoxH();
-    glPopMatrix();
+	glPopMatrix();
 }
 void RectPrism::rotate(float xRot,float yRot)
 {
@@ -59,6 +61,10 @@ void RectPrism::resize(float width, float height, float depth)
 	this->width += width;
 	this->height += height;
 	this->depth += depth;
+}
+float RectPrism::getDist(float a, float b, float c)
+{
+	return (this->xPos - a)*(this->xPos - a)+(this->yPos -b)*(this->yPos -b)+(this->zPos - c)*(this->zPos - c);
 }
 void RectPrism::drawBox(void)
 {
@@ -146,6 +152,4 @@ void RectPrism::drawBoxH(void)
 	glEnd();
 
 }
-
-
 RectPrism::~RectPrism(void) {}

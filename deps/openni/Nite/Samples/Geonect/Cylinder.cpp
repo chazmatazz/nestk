@@ -1,11 +1,15 @@
-#include "Cylinder.h"
-
+#ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
 #include <GLUT/glut.h>
 #else
-#include "StdAfx.h"
 #include <GL/glut.h>
+#include "StdAfx.h"
 #endif
+#else
+#include "opengles.h"
+#endif
+
+#include "Cylinder.h"
 
 
 Cylinder::Cylinder(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float length)
@@ -41,7 +45,7 @@ void Cylinder::draw(void)
 }
 void Cylinder::drawHighlighted(void)
 {
-	glLoadIdentity();
+	glPushMatrix();
 	glTranslatef(0.0f,0.0f,-10.0f);
 	glTranslatef(this->xPos,this->yPos,this->zPos);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
@@ -55,6 +59,7 @@ void Cylinder::drawHighlighted(void)
 	gluQuadricOrientation(quadric,GLU_OUTSIDE);
 	gluDisk( quadric, 0.0, radius2, 32, 16);
 	glTranslatef( 0,0,this->length );
+	glPopMatrix();
 }
 void Cylinder::rotate(float xRot,float yRot)
 {
@@ -72,5 +77,9 @@ void Cylinder::resize(float radius1, float radius2, float length)
 	this->radius1 += radius1;
 	this->radius2 += radius2;
 	this->length += length;
+}
+float Cylinder::getDist(float a, float b, float c)
+{
+	return (this->xPos - a)*(this->xPos - a)+(this->yPos -b)*(this->yPos -b)+(this->zPos - c)*(this->zPos - c);
 }
 Cylinder::~Cylinder(void){}

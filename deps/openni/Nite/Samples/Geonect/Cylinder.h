@@ -1,12 +1,15 @@
 #pragma once
-#include "shape.h"
-
+#include "Shape.h"
+#ifdef USE_GLUT
 #if (XN_PLATFORM == XN_PLATFORM_MACOSX)
 #include <GLUT/glut.h>
 #else
-#include "StdAfx.h"
 #include <GL/glut.h>
 #endif
+#else
+#include "opengles.h"
+#endif
+
 
 class Cylinder :public Shape
 {
@@ -18,6 +21,7 @@ public:
 	void rotate(float xRot,float yRot);
 	void displace(float x, float y, float z);
 	void resize(float width, float height, float depth);
+	float getDist(float a, float b, float c);
 private:
 	GLUquadricObj *quadric;
 	float xPos,yPos,zPos;

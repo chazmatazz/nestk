@@ -10,6 +10,7 @@ public:
 	void rotate(float xRot,float yRot);
 	void displace(float x, float y, float z);
 	void resize(float width, float height, float depth);
+	float getDist(float a, float b, float c);
 private:
 	float xPos,yPos,zPos;
 	float xRot,yRot;
