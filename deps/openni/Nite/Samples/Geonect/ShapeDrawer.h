@@ -9,18 +9,9 @@
 #include <XnVSwipeDetector.h>
 #include <XnVBroadcaster.h>
 #include <XnVPointControl.h>
+
+#include "common.h"
 #include "Shape.h"
-#include "RectPrism.h"
-
-
-#define CUBE 0
-#define SPHERE 1
-#define CONE 2
-#define TORUS 3
-#define TRANSLATE 4
-#define ROTATE 5
-#define STRETCH 6
-#define SELECT 7
 
 /**
  * This stores all the shapes and controls the rotation of shapes
@@ -51,7 +42,7 @@ public:
 	void OnPointDestroy(XnUInt32 nID);
 
 	/**
-	 * Draw the points, each with its own color.
+	 * Draw the objects
 	 */
 	void Draw() const;
     /**
@@ -62,7 +53,14 @@ public:
 	 * Change mode - set the active tool
 	 */
 	void SetTool(int tool);
+    /**
+     * Drop the current object, if any
+     */
+    void Drop();
     
+    /**
+     * Add a new shape and select it
+     */
     void AddShape(int shapeType);
 
 protected:
@@ -70,6 +68,7 @@ protected:
       printf("Steady detected for shape\n");
       GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
      drawer->m_CurrentShape = drawer->m_ProspectiveShape; // warning: race condition?
+        drawer->m_ProspectiveShape = NULL;
         // switch back to swipe detector
         drawer->m_pInnerFlowRouter->SetActive(drawer->m_pSwipeDetector);
         

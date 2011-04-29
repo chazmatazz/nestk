@@ -12,6 +12,10 @@
 	#include "opengles.h"
 #endif
 
+
+#include "RectPrism.h"
+#include "Cylinder.h"
+
 #define MAX_DIST 100
 #define MAX_DRIFT_DIST 100
 
@@ -65,6 +69,9 @@ void GktShapeDrawer::SetTool(int tool)
 	m_Tool = tool;
 }
 
+void GktShapeDrawer::Drop() {
+    m_CurrentShape = NULL;
+}
 void GktShapeDrawer::AddShape(int shapeType)
 {
     printf("Create shape initialized\n");
@@ -77,30 +84,27 @@ void GktShapeDrawer::AddShape(int shapeType)
     printf("AddShape Point (%f,%f,%f)\n", ptProjective.X, ptProjective.Y, ptProjective.Z);
     
     // Create object for this button
+    printf("Created shape %s!\n", sButton(shapeType));
     switch(shapeType) {
         case CUBE:
-            printf("Created shape CUBE!\n");
             shape = new RectPrism(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
                                   0, 0, 50, 50, 50);
             break;
-        case SPHERE:
-            printf("Created shape SPHERE!\n");
+        case CYLINDER:
+            shape = new Cylinder(ptProjective.X, 
+                                  ptProjective.Y, 
+                                  ptProjective.Z, 
+                                  0, 0, 50, 50, 50);
+            break;
+        case SHAPE3:
             shape = new RectPrism(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
                                   0, 0, 50, 50, 50);
             break;
-        case CONE:
-            printf("Created shape CONE!\n");
-            shape = new RectPrism(ptProjective.X, 
-                                  ptProjective.Y, 
-                                  ptProjective.Z, 
-                                  0, 0, 50, 50, 50);
-            break;
-        case TORUS:
-            printf("Created shape TORUS!\n");
+        case SHAPE4:
             shape = new RectPrism(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
@@ -222,11 +226,13 @@ void GktShapeDrawer::Draw() const
 	{
         Shape* shape = *ShapeIterator;
         if(m_CurrentShape == shape) {
-           
-            shape->drawHighlighted();
+            shape->draw(SELECTED);
         }  
+        else if (m_ProspectiveShape == shape) {
+            shape->draw(HOVER);
+        }
         else {
-            shape->draw();
+            shape->draw(UNSELECTED);
         }
     }
     glFlush();

@@ -22,26 +22,17 @@ RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float wi
 	this->depth = depth;
 }
 
-void RectPrism::draw(void)
+void RectPrism::draw(DrawState drawState)
 {
 	glPushMatrix();
 	glTranslatef(0.0f,0.0f,-10.0f);
 	glTranslatef(this->xPos,this->yPos,this->zPos);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
-	drawBox();
+	drawBox(drawState);
 	glPopMatrix();
 }
-void RectPrism::drawHighlighted(void)
-{
-	glPushMatrix();
-	glTranslatef(0.0f,0.0f,-10.0f);
-	glTranslatef(this->xPos,this->yPos,this->zPos);
-	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
-	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
-	drawBoxH();
-	glPopMatrix();
-}
+
 void RectPrism::rotate(float xRot,float yRot)
 {
 	this->xRot = xRot;
@@ -63,11 +54,21 @@ float RectPrism::getDist(float a, float b, float c)
 {
 	return (this->xPos - a)*(this->xPos - a)+(this->yPos -b)*(this->yPos -b)+(this->zPos - c)*(this->zPos - c);
 }
-void RectPrism::drawBox(void)
+void RectPrism::drawBox(DrawState drawState)
 {
 	glBegin(GL_QUADS);
 
-		glColor3f(1.0f, 0.0f, 0.0f);
+    switch(drawState) {
+        case UNSELECTED:
+            glColor3f(1.0f, 0.0f, 0.0f);
+            break;
+        case HOVER:
+            glColor3f(1.0f, 0.5f, 1.0f);
+            break;
+        case SELECTED:
+            glColor3f(1.0f, 1.0f, 0.0f);
+            break;            
+    }
 		// FRONT
 		glVertex3f(-width/2, -height/2, depth/2);
 		glVertex3f( width/2, -height/2, depth/2);
@@ -92,49 +93,6 @@ void RectPrism::drawBox(void)
 		glVertex3f( width/2, -height/2, depth/2);
 
 		glColor3f(0.0f, 0.0f, 1.0f);
-		// TOP
-		glVertex3f(-width/2, height/2, depth/2);
-		glVertex3f( width/2, height/2, depth/2);
-		glVertex3f( width/2, height/2, -depth/2);
-		glVertex3f(-width/2, height/2, -depth/2);
-		// BOTTOM
-		glVertex3f(-width/2, -height/2, depth/2);
-		glVertex3f(-width/2, -height/2, -depth/2);
-		glVertex3f( width/2, -height/2, -depth/2);
-		glVertex3f( width/2, -height/2, depth/2);
-
-	glEnd();
-
-}
-void RectPrism::drawBoxH(void)
-{
-	glBegin(GL_QUADS);
-
-		glColor3f(1.0f, 0.5f, 1.0f);
-		// FRONT
-		glVertex3f(-width/2, -height/2, depth/2);
-		glVertex3f( width/2, -height/2, depth/2);
-		glVertex3f( width/2, height/2, depth/2);
-		glVertex3f(-width/2, height/2, depth/2);
-		// BACK
-		glVertex3f(-width/2, -height/2, -depth/2);
-		glVertex3f(-width/2, height/2, -depth/2);
-		glVertex3f( width/2, height/2, -depth/2);
-		glVertex3f( width/2, -height/2, -depth/2);
-
-		//glColor3f(0.0f, 1.0f, 0.0f);
-		// LEFT
-		glVertex3f(-width/2, -height/2, depth/2);
-		glVertex3f(-width/2, height/2, depth/2);
-		glVertex3f(-width/2, height/2, -depth/2);
-		glVertex3f(-width/2, -height/2, -depth/2);
-		// RIGHT
-		glVertex3f( width/2, -height/2, -depth/2);
-		glVertex3f( width/2, height/2, -depth/2);
-		glVertex3f( width/2, height/2, depth/2);
-		glVertex3f( width/2, -height/2, depth/2);
-
-		//glColor3f(0.0f, 0.0f, 1.0f);
 		// TOP
 		glVertex3f(-width/2, height/2, depth/2);
 		glVertex3f( width/2, height/2, depth/2);

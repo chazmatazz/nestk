@@ -75,24 +75,29 @@ using namespace std;
 #endif
 
 
-#define CUBE 0
-#define CYLINDER 1
-#define SHAPE3 2
-#define SHAPE4 3
-#define TRANSLATE 4
-#define ROTATE 5
-#define STRETCH 6
-#define BEND 7
+#include "common.h"
 
 GLuint texture[8];
 
 typedef enum {
+    NO_HANDS, // no hands yet
   SHAPE_SELECTION, // select a shape to work with from a menu
   SHAPE_MANIPULATION, // shape object is created and being manipulated
-  TOOL_SELECTION, // select a tool from a menu to use in manupulating the shape
-  DETATCHED, // no shape objects are currently selected
+  TOOL_SELECTION // select a tool from a menu to use in manupulating the shape
 } UserMode;
 
+char* sUserMode(UserMode u) {
+    switch(u) {
+        case NO_HANDS:
+            return "NO_HANDS";
+        case SHAPE_SELECTION:
+            return "SHAPE_SELECTION";
+        case SHAPE_MANIPULATION:
+            return "SHAPE_MANIPULATION";
+        case TOOL_SELECTION:
+            return "TOOL_SELECTION";
+    }
+}
 
 // load a 50x50 RGB .RAW file as a texture
 GLuint LoadTextureRAW( const char * filename, int wrap )
@@ -362,7 +367,7 @@ XnVPushDetector* g_pPush;
 XnVSteadyDetector* g_pSteadyDetector;
 
 const int NUM_SHAPE_BUTTONS = 4;
-const int NUM_TOOL_BUTTONS = 4;
+const int NUM_TOOL_BUTTONS = 5;
 SteadyButton* g_pSButton[NUM_SHAPE_BUTTONS];
 SteadyButton* g_pTButton[NUM_TOOL_BUTTONS];
 
@@ -377,13 +382,11 @@ XnFloat g_fSmoothing = 0.0f;
 XnBool g_bPause = false;
 XnBool g_bQuit = false;
 XnBool g_bPlayRecording = false;
-int counter = 0;
+int g_Counter = 0;
 SessionState g_SessionState = NOT_IN_SESSION;
 UserMode g_UserMode = SHAPE_SELECTION;
-int g_Shape;
 int g_Tool;
 XnBool g_bSelect = false;
-RectPrism* rect;
 GktShapeDrawer* g_pShapeDrawer;
 int errorcase;
 
@@ -406,6 +409,8 @@ void CleanupExit()
 	exit (1);
 }
 
+void setUserMode(UserMode u);
+
 // Callback for when the focus is in progress
 void XN_CALLBACK_TYPE FocusProgress(const XnChar* strFocus, const XnPoint3D& ptPosition, XnFloat fProgress, void* UserCxt)
 {
@@ -416,12 +421,14 @@ void XN_CALLBACK_TYPE SessionStarting(const XnPoint3D& ptPosition, void* UserCxt
 {
 	printf("Session start: (%f,%f,%f)\n", ptPosition.X, ptPosition.Y, ptPosition.Z);
 	g_SessionState = IN_SESSION;
+    setUserMode(SHAPE_SELECTION);
 }
 // Callback for session end
 void XN_CALLBACK_TYPE SessionEnding(void* UserCxt)
 {
 	printf("Session end\n");
 	g_SessionState = NOT_IN_SESSION;
+    setUserMode(NO_HANDS);
 }
 void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 {
@@ -432,88 +439,109 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 	}
 }
 
+void setTool(int v) {
+    g_Tool = v;
+    printf("Switch to %s tool!\n", sButton(v));
+    g_pShapeDrawer->SetTool(v);
+}
+
+void setShapeMenuActive(XnBool active) {
+    if(active) {
+        for (int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+            // Activate the button
+            //g_pSessionManager->AddListener(g_pSButton[i]);
+            g_pSButton[i]->SetUnselected();
+        }
+    } else {
+        // deactivate the shape menu
+        for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
+            //g_pSessionManager->RemoveListener(g_pSButton[i]);
+            g_pSButton[i]->TurnOff();
+        } 
+
+    }
+}
+
+void setToolSelectionMenuActive(bool active) {
+    if(active) {
+        for (int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+            // Activate the button
+            //g_pSessionManager->AddListener(g_pTButton[i]);
+            g_pTButton[i]->SetUnselected();
+        }
+    } else {
+        // deactivate the tool selection menu
+        for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
+            //g_pSessionManager->RemoveListener(g_pTButton[i]);
+            g_pTButton[i]->TurnOff();
+        }
+    }
+}
+
+void setUserMode(UserMode u) {
+    printf("set user mode %s\n", sUserMode(u));
+    g_Counter = 0;
+    g_UserMode = u;
+    if(u == NO_HANDS) {
+        g_pShapeDrawer->SetActive(false);
+        setShapeMenuActive(false);
+        setToolSelectionMenuActive(false);
+    } else if(u == SHAPE_MANIPULATION) {  
+        g_pShapeDrawer->SetActive(true);
+        setShapeMenuActive(false);
+        setToolSelectionMenuActive(false);
+    } else if(u == SHAPE_SELECTION) {
+        g_pShapeDrawer->SetActive(false);
+        setShapeMenuActive(true);
+        setToolSelectionMenuActive(false);
+    } else if(u == TOOL_SELECTION) {
+        g_pShapeDrawer->SetActive(false);
+        setShapeMenuActive(false);
+        setToolSelectionMenuActive(false);
+    }
+}
+
+void selectTool(int v) {
+    if(v == SHAPE_SUBMENU) {
+        setUserMode(SHAPE_SELECTION);
+    } else {
+        setUserMode(SHAPE_MANIPULATION);
+        setTool(v);
+    }
+}
+
+void selectShape(int shape_type) {
+    setUserMode(SHAPE_MANIPULATION);
+    g_pShapeDrawer->AddShape(shape_type);
+    setTool(TRANSLATE);
+}
+
+void dropObject() {
+    g_pShapeDrawer->Drop();
+}
+
 // Callback for the SteadyButton
 void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 {
-  printf("button selected\n");
+    printf("button selected");
+  
 
-  // Select shape
-  if(g_UserMode == SHAPE_SELECTION) {
-    counter++;
+  if(g_UserMode == SHAPE_SELECTION || g_UserMode == TOOL_SELECTION) {
+      SteadyButton* button = (SteadyButton*)(cxt);
+      
+      printf("button %s selected\n", sButton(button->getType()));
+      
+    g_Counter++;
 
-    SteadyButton* button = (SteadyButton*)(cxt);
     button->SetSelected();
 
     // Delay for highlighing time    
-    if(counter == DISPLAY_DELAY) {
-      counter = 0;
-
-      g_Shape = button->getType();    
-      g_pShapeDrawer->AddShape(g_Shape);
-
-      // deactivate the shape menu
-      for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
-        //g_pSessionManager->RemoveListener(g_pSButton[i]);
-        g_pSButton[i]->TurnOff();
-      } 
-      // deactivate the tool selection menu
-      for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
-        //g_pSessionManager->RemoveListener(g_pTButton[i]);
-        g_pTButton[i]->TurnOff();
-      } 
-
-
-      // Automatically deselect the object
-      // Add object to a list for tracking all objects being manupulated
-      g_UserMode = SHAPE_MANIPULATION;
-      g_Tool = TRANSLATE;
-    }
-  }
-
-
-  // detect object selection on steady
-  if(g_UserMode == DETATCHED) {
-      // Select object
-  }
-
-  
-
-  // select tool
-  if(g_UserMode == TOOL_SELECTION) {
-    counter++;
-    
-    SteadyButton* button = (SteadyButton*)(cxt);
-    button->SetSelected();
-
-    // Delay for highlighting time
-    if(counter == DISPLAY_DELAY) {
-      g_UserMode = SHAPE_MANIPULATION;
-      g_pShapeDrawer->SetActive(true);
-      counter = 0;
-
-      g_Tool = button->getType();    
-
-      // deactivate the tool selection menu
-      for(int i = 0; i < NUM_TOOL_BUTTONS; i++) {
-        g_pTButton[i]->TurnOff();
-      } 
-      // deactivate the tool selection menu
-      for(int i = 0; i < NUM_SHAPE_BUTTONS; i++) {
-        //g_pSessionManager->RemoveListener(g_pSButton[i]);
-        g_pSButton[i]->TurnOff();
-      } 
-
-      // Update the tool icon in the corner
-      switch(g_Tool) {
-        case TRANSLATE:
-          printf("Switch to Translation tool!\n");
-          break;
-        case ROTATE:
-          printf("Switch to Rotation tool!\n");
-          break;
-      }
-
-      // Automatically deselect the object
+    if(g_Counter == DISPLAY_DELAY) {
+        if(g_UserMode == SHAPE_SELECTION) {
+            selectShape(button->getType());
+        } else if(g_UserMode == TOOL_SELECTION) {
+            selectTool(button->getType());
+        }
     }
   }
 }
@@ -522,14 +550,7 @@ void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleRea
 {
   printf("circle finish detected\n");
   if(g_UserMode == SHAPE_MANIPULATION) {
-    printf("open tool menu\n");
-    g_UserMode = TOOL_SELECTION;
-    g_pShapeDrawer->SetActive(false);
-    for (int i = 0; i < NUM_TOOL_BUTTONS; i++) {
-      // Activate the button
-      g_pSessionManager->AddListener(g_pTButton[i]);
-      g_pTButton[i]->SetUnselected();
-    }
+      setUserMode(TOOL_SELECTION);
   }
 }
 
@@ -539,11 +560,8 @@ void XN_CALLBACK_TYPE Drop(XnFloat fVelocity, XnFloat fAngle, void* UserCxt)
   printf("Drop detected!\n");
 
   if(g_UserMode == SHAPE_MANIPULATION){
-    // Disable movement of the shape object when dropped
-    g_pShapeDrawer->SetActive(false);
-    g_UserMode == DETATCHED;
+      dropObject();
   }
-
 }
 
 
@@ -583,6 +601,8 @@ void glutDisplay (void)
 		PrintSessionState(g_SessionState);
 	}
     
+    
+    // shapedrawer stores state internally.
     g_pShapeDrawer->Draw();
 
 
@@ -653,23 +673,7 @@ void glutKeyboard (unsigned char key, int x, int y)
 			g_fSmoothing = 0;
 		g_HandsGenerator.SetSmoothing(g_fSmoothing);
 		break;
-    case 'n':
-        // select mode (New) 
-        g_Tool = SELECT;
-        break;
-    case 't':
-        // translate mode 
-        g_Tool = TRANSLATE;
-        break;
-    case 'r':
-        // rotate mode 
-        g_Tool = ROTATE;
-        break;
-    case 'k':
-        // stretch mode (K) 
-        g_Tool = STRETCH;
-        break;
-	case 'e':
+    case 'e':
 		// end current session
 		g_pSessionManager->EndSession();
 		break;
@@ -815,7 +819,8 @@ int main(int argc, char ** argv)
     printf("init panels\n");
     initShapePanel();
     initToolPanel();
-
+    setUserMode(NO_HANDS);
+    
     // Initialization done. Start generating
     rc = g_Context.StartGeneratingAll();
     CHECK_RC(rc, "StartGenerating");

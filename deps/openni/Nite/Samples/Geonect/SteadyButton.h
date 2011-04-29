@@ -15,11 +15,16 @@
 *   restrictions on its use. This data contains valuable trade secrets      *
 *   and proprietary information of PrimeSense Ltd. and is protected by law. *
 *                                                                           *
-****************************************************************************/
-//#include <XnOpenNI.h>
+****************************************************************************
+ 
+*/
+
 
 #ifndef STEADY_BUTTON_H
 #define STEADY_BUTTON_H
+
+#include <XnOpenNI.h>
+#include "common.h"
 
 // A class for the button.
 // It is a broadcaster, with its internal push detector and flow manager connected to it.
@@ -144,20 +149,20 @@ class SteadyButton : public XnVPointControl
 
     void SetSelected() 
     {
-      printf("button %d is active\n", m_type);
+      printf("button %s is active\n", sButton(m_type));
       SELECTED_STATE = ButtonSelected;
       SetButtonMode(ButtonSelected);
     }
     void SetUnselected() 
     {
-      printf("button %d is active\n", m_type);
+      printf("button %s is active\n", sButton(m_type));
       SELECTED_STATE = ButtonUnselected;
       SetButtonMode(ButtonUnselected);
       SetSwipeActive();
     }
     void TurnOff() 
     {
-      printf("button %d is off\n", m_type);
+      printf("button %s is off\n", sButton(m_type));
       SetButtonMode(SteadyButton::ButtonNone);
       SetSwipeActive();
     }
