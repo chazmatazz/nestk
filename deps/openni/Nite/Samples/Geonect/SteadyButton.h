@@ -158,7 +158,7 @@ class SteadyButton : public XnVPointControl
       printf("button %s is active\n", sButton(m_type));
       SELECTED_STATE = ButtonUnselected;
       SetButtonMode(ButtonUnselected);
-      SetSwipeActive();
+      SetSteadyActive();
     }
     void TurnOff() 
     {

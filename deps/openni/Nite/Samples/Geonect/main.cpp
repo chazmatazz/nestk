@@ -83,7 +83,8 @@ typedef enum {
     NO_HANDS, // no hands yet
   SHAPE_SELECTION, // select a shape to work with from a menu
   SHAPE_MANIPULATION, // shape object is created and being manipulated
-  TOOL_SELECTION // select a tool from a menu to use in manupulating the shape
+  TOOL_SELECTION, // select a tool from a menu to use in manipulating the shape
+    DESELECTED // the shape is deselected, enable menu mode
 } UserMode;
 
 char* sUserMode(UserMode u) {
@@ -96,6 +97,8 @@ char* sUserMode(UserMode u) {
             return "SHAPE_MANIPULATION";
         case TOOL_SELECTION:
             return "TOOL_SELECTION";
+        case DESELECTED:
+            return "DESELECTED";
     }
 }
 
@@ -335,6 +338,8 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 		
             glDisable(GL_TEXTURE_2D);
             break;
+        case SHAPE_SUBMENU:
+            break;
     }
     glPopMatrix();
 }
@@ -351,6 +356,7 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 #define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
 #define STEADY_DELAY 10
 #define DISPLAY_DELAY 2
+#define ZMAX 100
 
 // OpenNI objects
 xn::Context g_Context;
@@ -384,12 +390,12 @@ XnBool g_bQuit = false;
 XnBool g_bPlayRecording = false;
 int g_Counter = 0;
 SessionState g_SessionState = NOT_IN_SESSION;
-UserMode g_UserMode = SHAPE_SELECTION;
+UserMode g_UserMode;
 int g_Tool;
 XnBool g_bSelect = false;
 GktShapeDrawer* g_pShapeDrawer;
 int errorcase;
-
+XnBoundingBox3D g_BoundingBox;
 void CleanupExit()
 {
   /*	
@@ -480,13 +486,16 @@ void setToolSelectionMenuActive(bool active) {
 
 void setUserMode(UserMode u) {
     printf("set user mode %s\n", sUserMode(u));
-    g_Counter = 0;
     g_UserMode = u;
     if(u == NO_HANDS) {
         g_pShapeDrawer->SetActive(false);
         setShapeMenuActive(false);
         setToolSelectionMenuActive(false);
-    } else if(u == SHAPE_MANIPULATION) {  
+    } else if(u == SHAPE_MANIPULATION) {
+        g_pShapeDrawer->SetActive(true);
+        setShapeMenuActive(false);
+        setToolSelectionMenuActive(false);
+    } else if(u == DESELECTED) {  
         g_pShapeDrawer->SetActive(true);
         setShapeMenuActive(false);
         setToolSelectionMenuActive(false);
@@ -510,26 +519,33 @@ void selectTool(int v) {
     }
 }
 
+/**
+ * a new shape
+ */
 void selectShape(int shape_type) {
     setUserMode(SHAPE_MANIPULATION);
     g_pShapeDrawer->AddShape(shape_type);
     setTool(TRANSLATE);
 }
 
-void dropObject() {
+/**
+ * deselectObject
+ */
+void deselectObject() {
+    setUserMode(DESELECTED);
     g_pShapeDrawer->Drop();
 }
 
 // Callback for the SteadyButton
 void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 {
-    printf("button selected");
+    printf("SteadyButton_Select\n");
   
 
   if(g_UserMode == SHAPE_SELECTION || g_UserMode == TOOL_SELECTION) {
       SteadyButton* button = (SteadyButton*)(cxt);
       
-      printf("button %s selected\n", sButton(button->getType()));
+      //printf("button %s selected\n", sButton(button->getType()));
       
     g_Counter++;
 
@@ -537,6 +553,8 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 
     // Delay for highlighing time    
     if(g_Counter == DISPLAY_DELAY) {
+        printf("pressing button %s\n", sButton(button->getType()));
+        g_Counter = 0;
         if(g_UserMode == SHAPE_SELECTION) {
             selectShape(button->getType());
         } else if(g_UserMode == TOOL_SELECTION) {
@@ -549,7 +567,8 @@ void XN_CALLBACK_TYPE SteadyButton_Select(void* cxt)
 void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleReason eReason, void* pUserCxt)
 {
   printf("circle finish detected\n");
-  if(g_UserMode == SHAPE_MANIPULATION) {
+  if(g_UserMode == DESELECTED) {
+      printf("entering tool selection\n");
       setUserMode(TOOL_SELECTION);
   }
 }
@@ -560,10 +579,25 @@ void XN_CALLBACK_TYPE Drop(XnFloat fVelocity, XnFloat fAngle, void* UserCxt)
   printf("Drop detected!\n");
 
   if(g_UserMode == SHAPE_MANIPULATION){
-      dropObject();
+      printf("deselecting object\n");
+      deselectObject();
   }
 }
 
+void XN_CALLBACK_TYPE ShapeSteady(XnFloat fVelocity, void* cxt) {
+    printf("Steady detected for shape\n");
+    if(g_UserMode == DESELECTED) {
+        g_Counter++;
+        if(g_Counter == DISPLAY_DELAY) {
+            g_Counter = 0;
+            if(g_pShapeDrawer->isHover()) {
+                printf("selecting shape");
+                g_pShapeDrawer->selectShape();
+            }
+        }
+        
+    }
+}
 
 
 // this function is called each frame
@@ -583,9 +617,9 @@ void glutDisplay (void)
     XnMapOutputMode mode;
 	g_DepthGenerator.GetMapOutputMode(mode);
 	#ifdef USE_GLUT
-    glOrtho(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
+    glOrtho(0, mode.nXRes, mode.nYRes, 0, -ZMAX, ZMAX);
 	#else
-	glOrthof(0, mode.nXRes, mode.nYRes, 0, -100.0, 100.0);
+	glOrthof(0, mode.nXRes, mode.nYRes, 0, -ZMAX, ZMAX);
 	#endif
 
 //    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;
@@ -812,9 +846,26 @@ int main(int argc, char ** argv)
     g_pDrawer->RegisterNoPoints(NULL, NoHands);
     g_pDrawer->SetDepthMap(g_bDrawDepthMap);
     
-    printf("shape drawe init\n");
-    g_pShapeDrawer = new GktShapeDrawer(g_DepthGenerator);
+    XnPoint3D ptMins;
+    ptMins.X = 0;
+    ptMins.Y = GL_WIN_SIZE_Y;
+    ptMins.Z = -ZMAX;
+    XnPoint3D ptMaxs;
+    ptMaxs.X = GL_WIN_SIZE_X;
+    ptMaxs.Y = 0;
+    ptMaxs.Z = ZMAX;
+    g_BoundingBox.LeftBottomNear = ptMins;
+    g_BoundingBox.RightTopFar = ptMaxs;
+    
+    printf("shapedrawer init\n");
+    g_pShapeDrawer = new GktShapeDrawer(g_DepthGenerator, g_BoundingBox);
     g_pBroadcaster->AddListener(g_pShapeDrawer);
+    
+    
+    //g_pSteadyDetector = new XnVSteadyDetector;
+    //g_pBroadcaster->AddListener(g_pSteadyDetector);
+    //g_pSteadyDetector->RegisterSteady(g_pShapeDrawer, ShapeSteady);
+    
     
     printf("init panels\n");
     initShapePanel();

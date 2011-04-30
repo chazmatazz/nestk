@@ -12,7 +12,7 @@
 #include "Cylinder.h"
 
 
-Cylinder::Cylinder(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float length)
+Cylinder::Cylinder(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float length, XnBoundingBox3D& boundingBox)
 {
 	this->xPos = x;
 	this->yPos = y;
@@ -22,6 +22,7 @@ Cylinder::Cylinder(float x, float y, float z, float xRot, float yRot, float radi
 	this->length = length;
 	this->radius1 = radius1;
 	this->radius2 = radius2;
+    this->boundingBox = boundingBox;
 	quadric = gluNewQuadric();
 }
 void Cylinder::draw(DrawState drawState)

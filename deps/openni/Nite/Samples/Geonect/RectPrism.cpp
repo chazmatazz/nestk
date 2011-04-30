@@ -10,7 +10,7 @@
 
 
 
-RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth)
+RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth, XnBoundingBox3D& boundingBox)
 {
 	this->xPos = x;
 	this->yPos = y;
@@ -20,6 +20,7 @@ RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float wi
 	this->width = width;
 	this->height = height;
 	this->depth = depth;
+    this->boundingBox = boundingBox;
 }
 
 void RectPrism::draw(DrawState drawState)

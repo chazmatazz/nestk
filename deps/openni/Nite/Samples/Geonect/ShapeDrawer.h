@@ -19,7 +19,7 @@
 class GktShapeDrawer : public XnVPointControl
 {
 public:
-	GktShapeDrawer(xn::DepthGenerator depthGenerator);
+	GktShapeDrawer(xn::DepthGenerator depthGenerator, XnBoundingBox3D& boundingBox);
 	virtual ~GktShapeDrawer();
 
 	/**
@@ -63,21 +63,21 @@ public:
      */
     void AddShape(int shapeType);
 
-protected:
-    static void XN_CALLBACK_TYPE ShapeSteady(XnFloat fVelocity, void* cxt) {
-      printf("Steady detected for shape\n");
-      GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
-     drawer->m_CurrentShape = drawer->m_ProspectiveShape; // warning: race condition?
-        drawer->m_ProspectiveShape = NULL;
-        // switch back to swipe detector
-        drawer->m_pInnerFlowRouter->SetActive(drawer->m_pSwipeDetector);
-        
+    /** 
+     * do we have a current shape
+     */
+    XnBool isSelected() {
+        return m_CurrentShape != NULL;
     }
-    
-   XnVFlowRouter* m_pInnerFlowRouter;
-	XnVSwipeDetector* m_pSwipeDetector;
-	XnVSteadyDetector* m_pSteadyDetector;
-	XnVBroadcaster m_Broadcaster;
+    /**
+     * Are we hovering a shape
+     */
+    XnBool isHover() {
+        return m_ProspectiveShape != NULL;
+    }
+    void setHover(Shape* hover);
+    void selectShape();
+protected:
 
 	// Number of previous position to store for each hand
 	XnUInt32 m_nHistorySize;
@@ -87,12 +87,13 @@ protected:
 	xn::DepthGenerator m_DepthGenerator;
 	XnFloat* m_pfPositionBuffer;
 
-    XnBool m_bActive; // if the shapedrawer is active
+    XnBool m_bActive; // if the shapedrawer is active (visible)
 	int m_Tool; // the tool that we're using
     
     std::list<Shape*> m_Shapes; // the list of shapes in the shapedrawer
     Shape* m_ProspectiveShape; // the shape that we are hovering
     Shape* m_CurrentShape; // the selected shape (after Steady)
+    XnBoundingBox3D m_BoundingBox;
 };
 
 #endif

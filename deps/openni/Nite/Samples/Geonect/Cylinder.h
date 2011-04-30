@@ -8,11 +8,13 @@
 #include <GL/glut.h>
 #endif
 
+#include <XnOpenNI.h>
+#include <XnCppWrapper.h>
 
 class Cylinder :public Shape
 {
 public:
-	Cylinder(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float length);
+	Cylinder(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float length, XnBoundingBox3D& boundingBox);
 	~Cylinder(void);
 	void draw(DrawState drawState);
 	void rotate(float xRot,float yRot);
@@ -27,5 +29,6 @@ private:
 	float xPos,yPos,zPos;
 	float xRot,yRot;
 	float radius1,radius2,length;
+    XnBoundingBox3D boundingBox;
 	void drawCyl(DrawState drawState);
 };

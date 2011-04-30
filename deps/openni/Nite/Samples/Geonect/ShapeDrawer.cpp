@@ -16,34 +16,23 @@
 #include "RectPrism.h"
 #include "Cylinder.h"
 
-#define MAX_DIST 100
-#define MAX_DRIFT_DIST 100
+#define MAX_DIST 20
+#define MAX_DRIFT_DIST 20
 
 
 // Constructor. Receives the number of previous positions to store per hand,
 // and a source for depth map
-GktShapeDrawer::GktShapeDrawer(xn::DepthGenerator depthGenerator) :
+GktShapeDrawer::GktShapeDrawer(xn::DepthGenerator depthGenerator, XnBoundingBox3D& boundingBox) :
 	XnVPointControl("GktShapeDrawer"),
 	m_DepthGenerator(depthGenerator), 
     m_nHistorySize(2), 
     m_bActive(false),
     m_Tool(TRANSLATE),
-    m_CurrentShape(NULL)    
+    m_CurrentShape(NULL),
+    m_ProspectiveShape(NULL),
+    m_BoundingBox(boundingBox)
 {
 	m_pfPositionBuffer = new XnFloat[m_nHistorySize*3];
-    m_pInnerFlowRouter = new XnVFlowRouter;
-    m_pSwipeDetector = new XnVSwipeDetector;
-    m_pSteadyDetector = new XnVSteadyDetector;
-    
-    // Swipe detector used as a dummy detector for the flow switch
-    // no selection can be made while the swipe detector is active. what does this mean?
-    m_Broadcaster.AddListener(m_pInnerFlowRouter);
-    m_pInnerFlowRouter->SetActive(m_pSwipeDetector);
-    
-    // Listen to inner activateable's events:
-    m_pSteadyDetector->RegisterSteady(this, &ShapeSteady);
-    
-    
 }
 
 // Destructor. Clear all data structures
@@ -90,25 +79,25 @@ void GktShapeDrawer::AddShape(int shapeType)
             shape = new RectPrism(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
-                                  0, 0, 50, 50, 50);
+                                  0, 0, 50, 50, 50, m_BoundingBox);
             break;
         case CYLINDER:
             shape = new Cylinder(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
-                                  0, 0, 50, 50, 50);
+                                  0, 0, 50, 50, 50, m_BoundingBox);
             break;
         case SHAPE3:
             shape = new RectPrism(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
-                                  0, 0, 50, 50, 50);
+                                  0, 0, 50, 50, 50, m_BoundingBox);
             break;
         case SHAPE4:
             shape = new RectPrism(ptProjective.X, 
                                   ptProjective.Y, 
                                   ptProjective.Z, 
-                                  0, 0, 50, 50, 50);
+                                  0, 0, 50, 50, 50, m_BoundingBox);
             break;
     }
 
@@ -129,7 +118,7 @@ void GktShapeDrawer::OnPointCreate(const XnVHandPointContext* cxt)
 	bShouldPrint = true;
 	OnPointUpdate(cxt);
 	bShouldPrint = true;
-    printf("Create point end sdrawer\n");
+    printf("Create point end shapedrawer\n");
 }
 // Handle new position of an existing hand
 void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
@@ -150,10 +139,10 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
     
 
     if(m_bActive) { // if the ShapeDrawer is currently active (e.g. displayed)
-        if(!m_CurrentShape) { // if there is not a currently selected shape
+        if(!isSelected()) { // if there is not a currently selected shape
             XnBool bHover = false;
             XnPoint3D curr = m_History[cxt->nID].front();
-            if(m_ProspectiveShape) { // if there is a prospective shape, see if we are still hovering it
+            if(isHover()) { // if there is a prospective shape, see if we are still hovering it
                 XnFloat dist = m_ProspectiveShape->getDist(curr.X, curr.Y, curr.Z);
                 bHover = dist < MAX_DRIFT_DIST;
             }
@@ -173,17 +162,8 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                         min_shape = shape;
                     }
                 }
-                if(min_shape != NULL) { // if we are over a shape, make it the prospective
-                    m_pInnerFlowRouter->SetActive(m_pSteadyDetector);
-                    printf("Rollover shape\n");
-                    m_ProspectiveShape = min_shape;
-                } else {
-                    m_ProspectiveShape = NULL;
-                }
+                setHover(min_shape);
             } 
-            if(!m_ProspectiveShape) { // if we aren't hovering, set the state back to swipe detector
-                m_pInnerFlowRouter->SetActive(m_pSwipeDetector);
-            }
         } else { // we have a currently selected shape
             XnPoint3D a = m_History[cxt->nID].front();
             XnPoint3D b = m_History[cxt->nID].back();
@@ -207,6 +187,17 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
     }
 }
 
+void GktShapeDrawer::setHover(Shape* hover) {
+    if(hover != NULL) {
+        //printf("ShapeDrawer: Hovering\n");
+    }
+    m_ProspectiveShape = hover;
+}
+void GktShapeDrawer::selectShape() {
+    printf("ShapeDrawer: Selecting\n");
+    m_CurrentShape = m_ProspectiveShape; // warning: race condition?
+    setHover(NULL);
+}
 // Handle destruction of an existing hand
 void GktShapeDrawer::OnPointDestroy(XnUInt32 nID)
 {
@@ -244,7 +235,6 @@ void GktShapeDrawer::Update(XnVMessage* pMessage)
 {
 	// PointControl's Update calls all callbacks for each hand
 	XnVPointControl::Update(pMessage);
-    m_Broadcaster.Update(pMessage);
 
 	if (m_bActive)
 	{

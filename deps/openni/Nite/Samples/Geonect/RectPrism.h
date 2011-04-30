@@ -1,9 +1,12 @@
 #pragma once
 #include "Shape.h"
+#include <XnOpenNI.h>
+#include <XnCppWrapper.h>
+
 class RectPrism :public Shape
 {
 public:
-	RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth);
+	RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth, XnBoundingBox3D& boundingBox);
 	~RectPrism(void);
 	void draw(DrawState drawState);
 	void rotate(float xRot,float yRot);
@@ -17,5 +20,6 @@ private:
 	float xPos,yPos,zPos;
 	float xRot,yRot;
 	float width,height,depth;
+    XnBoundingBox3D boundingBox;
 	void drawBox(DrawState drawState);
 };
