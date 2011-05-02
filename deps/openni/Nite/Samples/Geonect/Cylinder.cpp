@@ -25,6 +25,7 @@ Cylinder::Cylinder(float x, float y, float z, float xRot, float yRot, float radi
     this->boundingBox = boundingBox;
 	quadric = gluNewQuadric();
 }
+
 void Cylinder::draw(DrawState drawState)
 {
 	glPushMatrix();
@@ -33,44 +34,13 @@ void Cylinder::draw(DrawState drawState)
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
 	glTranslatef(0.0f,0.0f,-this->length/2);
-    switch(drawState) {
-        case UNSELECTED:
-            glColor3f(0.0f, 0.0f, 1.0f);
-            break;
-        case HOVER:
-            glColor3f(1.0f, 0.5f, 1.0f);
-            break;
-        case SELECTED:
-            glColor3f(1.0f, 1.0f, 0.0f);
-            break;
-    }
-	glColor3f(0.0f, 0.0f, 1.0f);
+    setglColor(drawState, SIDE1); // side
 	gluCylinder(quadric,this->radius1,this->radius2,length,32,16);
-    switch(drawState) {
-        case UNSELECTED:
-            glColor3f(1.0f, 0.0f, 0.0f);
-            break;
-        case HOVER:
-            glColor3f(1.0f, 0.5f, 1.0f);
-            break;
-        case SELECTED:
-            glColor3f(1.0f, 1.0f, 0.0f);
-            break;
-    }
+    setglColor(drawState, SIDE2); // Top
 	gluQuadricOrientation(quadric,GLU_INSIDE);
 	gluDisk( quadric, 0.0, radius1, 32, 16);
 	glTranslatef( 0,0,this->length );
-    switch(drawState) {
-        case UNSELECTED:
-            glColor3f(0.0f, 1.0f, 0.0f);
-            break;
-        case HOVER:
-            glColor3f(1.0f, 0.5f, 1.0f);
-            break;
-        case SELECTED:
-            glColor3f(1.0f, 1.0f, 0.0f);
-            break;
-    }
+    setglColor(drawState, SIDE2); // bottom
 	gluQuadricOrientation(quadric,GLU_OUTSIDE);
 	gluDisk( quadric, 0.0, radius2, 32, 16);
 	glTranslatef( 0,0,this->length );

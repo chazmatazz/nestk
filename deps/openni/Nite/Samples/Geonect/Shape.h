@@ -1,9 +1,18 @@
 #pragma once
+
 typedef enum {
-    UNSELECTED,
-    HOVER,
-    SELECTED
+    DRAWSTATE_UNSELECTED,
+    DRAWSTATE_HOVER,
+    DRAWSTATE_SELECTED
 } DrawState;
+
+typedef enum {
+    SIDE1,
+    SIDE2,
+    SIDE3
+} ObjectFace;
+
+void setglColor(DrawState d, ObjectFace f);
 
 class Shape
 {

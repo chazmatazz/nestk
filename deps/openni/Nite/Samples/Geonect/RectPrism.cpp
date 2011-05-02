@@ -59,17 +59,7 @@ void RectPrism::drawBox(DrawState drawState)
 {
 	glBegin(GL_QUADS);
 
-    switch(drawState) {
-        case UNSELECTED:
-            glColor3f(1.0f, 0.0f, 0.0f);
-            break;
-        case HOVER:
-            glColor3f(1.0f, 0.5f, 1.0f);
-            break;
-        case SELECTED:
-            glColor3f(1.0f, 1.0f, 0.0f);
-            break;            
-    }
+    setglColor(drawState, SIDE1);
 		// FRONT
 		glVertex3f(-width/2, -height/2, depth/2);
 		glVertex3f( width/2, -height/2, depth/2);
@@ -81,7 +71,7 @@ void RectPrism::drawBox(DrawState drawState)
 		glVertex3f( width/2, height/2, -depth/2);
 		glVertex3f( width/2, -height/2, -depth/2);
 
-		glColor3f(0.0f, 1.0f, 0.0f);
+		 setglColor(drawState, SIDE2);
 		// LEFT
 		glVertex3f(-width/2, -height/2, depth/2);
 		glVertex3f(-width/2, height/2, depth/2);
@@ -93,7 +83,7 @@ void RectPrism::drawBox(DrawState drawState)
 		glVertex3f( width/2, height/2, depth/2);
 		glVertex3f( width/2, -height/2, depth/2);
 
-		glColor3f(0.0f, 0.0f, 1.0f);
+		 setglColor(drawState, SIDE3);
 		// TOP
 		glVertex3f(-width/2, height/2, depth/2);
 		glVertex3f( width/2, height/2, depth/2);

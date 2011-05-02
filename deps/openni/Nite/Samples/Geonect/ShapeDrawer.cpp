@@ -33,6 +33,20 @@ GktShapeDrawer::GktShapeDrawer(xn::DepthGenerator depthGenerator, XnBoundingBox3
     m_BoundingBox(boundingBox)
 {
 	m_pfPositionBuffer = new XnFloat[m_nHistorySize*3];
+    
+    // Create internal objects
+    m_pInnerFlowRouter = new XnVFlowRouter;
+    m_pSwipeDetector = new XnVSwipeDetector;
+    m_pSteadyDetector = new XnVSteadyDetector;
+    
+    // Swipe detector used as a dummy detector for the flow switch
+    // no selection can be made while the swipe detector is active
+    m_Broadcaster.AddListener(m_pInnerFlowRouter);
+        
+    // Listen to inner activateable's events:
+    m_pSteadyDetector->RegisterSteady(this, &ShapeSteady_OnSteady);
+    
+    m_pInnerFlowRouter->SetActive(m_pSteadyDetector);
 }
 
 // Destructor. Clear all data structures
@@ -48,7 +62,7 @@ GktShapeDrawer::~GktShapeDrawer()
 	delete []m_pfPositionBuffer;
 }
 
-void GktShapeDrawer::SetActive(XnBool  active) {
+void GktShapeDrawer::SetActive(XnBool active) {
     
 	m_bActive = active;
 }
@@ -188,9 +202,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
 }
 
 void GktShapeDrawer::setHover(Shape* hover) {
-    if(hover != NULL) {
-        //printf("ShapeDrawer: Hovering\n");
-    }
+    m_Counter = 0;
     m_ProspectiveShape = hover;
 }
 void GktShapeDrawer::selectShape() {
@@ -217,13 +229,13 @@ void GktShapeDrawer::Draw() const
 	{
         Shape* shape = *ShapeIterator;
         if(m_CurrentShape == shape) {
-            shape->draw(SELECTED);
+            shape->draw(DRAWSTATE_SELECTED);
         }  
         else if (m_ProspectiveShape == shape) {
-            shape->draw(HOVER);
+            shape->draw(DRAWSTATE_HOVER);
         }
         else {
-            shape->draw(UNSELECTED);
+            shape->draw(DRAWSTATE_UNSELECTED);
         }
     }
     glFlush();
@@ -235,12 +247,27 @@ void GktShapeDrawer::Update(XnVMessage* pMessage)
 {
 	// PointControl's Update calls all callbacks for each hand
 	XnVPointControl::Update(pMessage);
-
+    m_Broadcaster.Update(pMessage);
 	if (m_bActive)
 	{
 		Draw();
 	}
 }
 
+// Register/Unregister for SteadyButton's event - Select
+XnCallbackHandle GktShapeDrawer::RegisterSelect(void* UserContext, SelectCB pCB)
+{
+    XnCallbackHandle handle;
+    m_SelectCBs.Register(pCB, this, &handle);
+    return handle;
+}
+void GktShapeDrawer::UnregisterSelect(XnCallbackHandle handle)
+{
+    m_SelectCBs.Unregister(handle);
+}
 
 
+void GktShapeDrawer::Select()
+{
+    m_SelectCBs.Raise();
+}

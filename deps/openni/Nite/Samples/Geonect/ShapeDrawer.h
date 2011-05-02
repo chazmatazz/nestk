@@ -3,12 +3,26 @@
 
 #include <map>
 #include <list>
+
+// Headers for OpenNI
+#include <XnOpenNI.h>
 #include <XnCppWrapper.h>
+#include <XnHash.h>
+#include <XnLog.h>
+
+#include <XnVHandPointContext.h>
+#include <XnVSessionManager.h>
 #include <XnVFlowRouter.h>
+#include <XnVCircleDetector.h>
+#include <XnVPushDetector.h>
+#include <XnVSelectableSlider1D.h>
 #include <XnVSteadyDetector.h>
-#include <XnVSwipeDetector.h>
 #include <XnVBroadcaster.h>
-#include <XnVPointControl.h>
+#include <XnVPushDetector.h>
+#include <XnVPointArea.h>
+
+// Header for NITE
+#include "XnVNite.h"
 
 #include "common.h"
 #include "Shape.h"
@@ -19,8 +33,12 @@
 class GktShapeDrawer : public XnVPointControl
 {
 public:
+    typedef void (XN_CALLBACK_TYPE *LeaveCB)(void* pUserCxt);
+    typedef void (XN_CALLBACK_TYPE *SelectCB)(void* cxt);
+    
 	GktShapeDrawer(xn::DepthGenerator depthGenerator, XnBoundingBox3D& boundingBox);
 	virtual ~GktShapeDrawer();
+
 
 	/**
 	 * Handle a new message.
@@ -77,8 +95,32 @@ public:
     }
     void setHover(Shape* hover);
     void selectShape();
+    
+    XnCallbackHandle RegisterSelect(void* UserContext, SelectCB pCB);
+    void UnregisterSelect(XnCallbackHandle handle);
+    void Select();
+    
+    void updateCounter() {
+        m_Counter++;
+    }
+    XnInt getCounter() {
+        return m_Counter;
+    }
+    
 protected:
-
+    static void XN_CALLBACK_TYPE ShapeSteady_OnSteady(XnFloat fVelocity, void* cxt) {
+        printf("Steady detected for shape\n");
+        GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
+        drawer->updateCounter();
+        if(drawer->getCounter() == DISPLAY_DELAY) {
+            if(drawer->isHover()) {
+                printf("selecting shape\n");
+                drawer->selectShape();
+                drawer->Select();
+            }
+        }
+    }
+    
 	// Number of previous position to store for each hand
 	XnUInt32 m_nHistorySize;
 	// previous positions per hand
@@ -94,6 +136,14 @@ protected:
     Shape* m_ProspectiveShape; // the shape that we are hovering
     Shape* m_CurrentShape; // the selected shape (after Steady)
     XnBoundingBox3D m_BoundingBox;
+    
+    XnVFlowRouter* m_pInnerFlowRouter;
+	XnVSwipeDetector* m_pSwipeDetector;
+	XnVSteadyDetector* m_pSteadyDetector;
+	XnVBroadcaster m_Broadcaster;
+    
+    XnVEvent m_SelectCBs;
+    XnInt m_Counter;
 };
 
 #endif
