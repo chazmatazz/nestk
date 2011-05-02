@@ -16,8 +16,8 @@
 #include "RectPrism.h"
 #include "Cylinder.h"
 
-#define MAX_DIST 20
-#define MAX_DRIFT_DIST 20
+#define MAX_DIST_SQ 100
+#define MAX_DRIFT_DIST_SQ 100
 
 
 // Constructor. Receives the number of previous positions to store per hand,
@@ -77,40 +77,32 @@ void GktShapeDrawer::Drop() {
 }
 void GktShapeDrawer::AddShape(int shapeType)
 {
-    printf("Create shape initialized\n");
-    Shape* shape;
-    XnPoint3D ptProjective(m_History[GetPrimaryID()].front());
-    printf("get history point\n");
-    m_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
-    printf("convert real to projective\n");
-    ptProjective.Z = 0;
-    printf("AddShape Point (%f,%f,%f)\n", ptProjective.X, ptProjective.Y, ptProjective.Z);
+    XnPoint3D ptCurr(m_History[GetPrimaryID()].front());
     
-    // Create object for this button
-    printf("Created shape %s!\n", sButton(shapeType));
+    Shape* shape;
     switch(shapeType) {
         case CUBE:
-            shape = new RectPrism(ptProjective.X, 
-                                  ptProjective.Y, 
-                                  ptProjective.Z, 
+            shape = new RectPrism(ptCurr.X, 
+                                  ptCurr.Y, 
+                                  ptCurr.Z, 
                                   0, 0, 50, 50, 50, m_BoundingBox);
             break;
         case CYLINDER:
-            shape = new Cylinder(ptProjective.X, 
-                                  ptProjective.Y, 
-                                  ptProjective.Z, 
+            shape = new Cylinder(ptCurr.X, 
+                                  ptCurr.Y, 
+                                  ptCurr.Z, 
                                   0, 0, 50, 50, 50, m_BoundingBox);
             break;
         case SHAPE3:
-            shape = new RectPrism(ptProjective.X, 
-                                  ptProjective.Y, 
-                                  ptProjective.Z, 
+            shape = new RectPrism(ptCurr.X, 
+                                  ptCurr.Y, 
+                                  ptCurr.Z, 
                                   0, 0, 50, 50, 50, m_BoundingBox);
             break;
         case SHAPE4:
-            shape = new RectPrism(ptProjective.X, 
-                                  ptProjective.Y, 
-                                  ptProjective.Z, 
+            shape = new RectPrism(ptCurr.X, 
+                                  ptCurr.Y, 
+                                  ptCurr.Z, 
                                   0, 0, 50, 50, 50, m_BoundingBox);
             break;
     }
@@ -137,32 +129,31 @@ void GktShapeDrawer::OnPointCreate(const XnVHandPointContext* cxt)
 // Handle new position of an existing hand
 void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
 {
-	// positions are kept in projective coordinates, since they are only used for drawing
-	XnPoint3D ptProjective(cxt->ptPosition);
-
-	if (bShouldPrint)printf("Point (%f,%f,%f)", ptProjective.X, ptProjective.Y, ptProjective.Z);
-	//m_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, &ptProjective);
-	if (bShouldPrint)printf(" -> (%f,%f,%f)\n", ptProjective.X, ptProjective.Y, ptProjective.Z);
+    // we want to track points all the time for history purposes
+    // for now, positions are kept in 2D Coordinates
+    XnPoint3D ptProjective(cxt->ptPosition);
+    m_DepthGenerator.ConvertRealWorldToProjective(1, &ptProjective, 
+                                                  &ptProjective);
+    ptProjective.Z = 0;
     
-	// Add new position to the history buffer
+    
+    // Add new position to the history buffer
 	m_History[cxt->nID].push_front(ptProjective);
 	// Keep size of history buffer
 	if (m_History[cxt->nID].size() > m_nHistorySize)
 		m_History[cxt->nID].pop_back();
-	bShouldPrint = false;
     
-
     if(m_bActive) { // if the ShapeDrawer is currently active (e.g. displayed)
         if(!isSelected()) { // if there is not a currently selected shape
             XnBool bHover = false;
             XnPoint3D curr = m_History[cxt->nID].front();
             if(isHover()) { // if there is a prospective shape, see if we are still hovering it
-                XnFloat dist = m_ProspectiveShape->getDist(curr.X, curr.Y, curr.Z);
-                bHover = dist < MAX_DRIFT_DIST;
+                XnFloat dist_sq = m_ProspectiveShape->getDistSq(curr.X, curr.Y, curr.Z);
+                bHover = dist_sq < MAX_DRIFT_DIST_SQ;
             }
             if(!bHover) { // if we are not hovering a prospective
                 // see if we are over a shape
-                XnFloat min_dist;
+                XnFloat min_dist_sq = MAX_DIST_SQ+1;
                 Shape* min_shape = NULL;
                 std::list<Shape*>::const_iterator ShapeIterator;
                 for (ShapeIterator = m_Shapes.begin();
@@ -170,9 +161,9 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                      ++ShapeIterator)
                 {
                     Shape* shape = *ShapeIterator;
-                    XnFloat dist = shape->getDist(curr.X, curr.Y, curr.Z);
-                    if(shape == m_Shapes.front() || (dist < MAX_DIST && dist < min_dist)) {
-                        min_dist = dist;
+                    XnFloat dist_sq = shape->getDistSq(curr.X, curr.Y, curr.Z);
+                    if(dist_sq < MAX_DIST_SQ && dist_sq < min_dist_sq) {
+                        min_dist_sq = dist_sq;
                         min_shape = shape;
                     }
                 }
@@ -187,7 +178,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
             d.Z = a.Z - b.Z;
             switch(m_Tool) {
                 case TRANSLATE:
-                    m_CurrentShape->displace(d.X, -d.Y, d.Z);
+                    m_CurrentShape->displace(d.X, d.Y, d.Z);
                     break;
                 case ROTATE:
                     m_CurrentShape->rotate(d.X, d.Y);
@@ -202,6 +193,11 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
 }
 
 void GktShapeDrawer::setHover(Shape* hover) {
+    if(hover == NULL) {
+        //printf("unset hover\n");
+    } else {
+        printf("set hover\n");
+    }
     m_Counter = 0;
     m_ProspectiveShape = hover;
 }
@@ -245,11 +241,14 @@ void GktShapeDrawer::Draw() const
 // Handle a new Message
 void GktShapeDrawer::Update(XnVMessage* pMessage)
 {
-	// PointControl's Update calls all callbacks for each hand
-	XnVPointControl::Update(pMessage);
-    m_Broadcaster.Update(pMessage);
+    // we want to track points all the time for history purposes
+    // PointControl's Update calls all callbacks for each hand
+    XnVPointControl::Update(pMessage);
+
 	if (m_bActive)
 	{
+        // we only want to broadcast to our events if we are active
+        m_Broadcaster.Update(pMessage);
 		Draw();
 	}
 }

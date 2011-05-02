@@ -374,7 +374,9 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 #define MAXIMUM_VELOCITY .005
 #define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
 #define STEADY_DELAY 10
-#define ZMAX 100
+
+#define ZMIN 0
+#define ZMAX 800
 
 // OpenNI objects
 xn::Context g_Context;
@@ -569,7 +571,7 @@ void XN_CALLBACK_TYPE CircleCB(XnFloat fTimes, XnVCircleDetector::XnVNoCircleRea
 // Callback for the Push event
 void XN_CALLBACK_TYPE Drop(XnFloat fVelocity, XnFloat fAngle, void* UserCxt)
 {
-  printf("Drop detected!\n");
+  //printf("Drop detected!\n");
     
   if(g_UserMode == SHAPE_MANIPULATION){
       printf("deselecting object\n");
@@ -605,9 +607,9 @@ void glutDisplay (void)
     XnMapOutputMode mode;
 	g_DepthGenerator.GetMapOutputMode(mode);
 	#ifdef USE_GLUT
-    glOrtho(0, mode.nXRes, mode.nYRes, 0, -ZMAX, ZMAX);
+    glOrtho(0, mode.nXRes, mode.nYRes, 0, ZMIN, ZMAX);
 	#else
-	glOrthof(0, mode.nXRes, mode.nYRes, 0, -ZMAX, ZMAX);
+	glOrthof(0, mode.nXRes, mode.nYRes, 0, ZMIN, ZMAX);
 	#endif
 
 //    cout << "ortho dim x=" << mode.nXRes << " y=" << mode.nYRes << endl;

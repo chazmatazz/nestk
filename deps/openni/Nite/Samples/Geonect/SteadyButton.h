@@ -166,16 +166,20 @@ class SteadyButton : public XnVPointControl
 
 	void Update(XnVMessage* pMessage)
 	{
-		XnVPointControl::Update(pMessage);
-        m_Broadcaster.Update(pMessage);
+        // we might as well always listen for points (as in shapedrawer)
+        XnVPointControl::Update(pMessage);
+        
+        // we only forward updates to the broadcaster if we are active.
         if (isActive())
         {
+            m_Broadcaster.Update(pMessage);
             Draw();
         }
 	}
 
     void OnPointUpdate(const XnVHandPointContext* pContext)
     {
+        // we only care about point updates if we are active
         if(isActive()) {
           // Convert to a 2D projection
           XnPoint3D ptProjective(pContext->ptPosition);

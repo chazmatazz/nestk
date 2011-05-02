@@ -51,8 +51,9 @@ void RectPrism::resize(float width, float height, float depth)
 	this->height += height;
 	this->depth += depth;
 }
-float RectPrism::getDist(float a, float b, float c)
+float RectPrism::getDistSq(float a, float b, float c)
 {
+    
 	return (this->xPos - a)*(this->xPos - a)+(this->yPos -b)*(this->yPos -b)+(this->zPos - c)*(this->zPos - c);
 }
 void RectPrism::drawBox(DrawState drawState)
