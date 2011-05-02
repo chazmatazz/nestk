@@ -1,6 +1,9 @@
 #ifndef GKT_COMMON_H
 #define GKT_COMMON_H
 
+#include <XnOpenNI.h>
+#include <XnCppWrapper.h>
+
 #define CUBE 0
 #define CYLINDER 1
 #define SHAPE3 2
@@ -24,6 +27,8 @@ typedef enum {
  * Applies to the button types #defined above
  */
 char* sButton(int button);
+
+XnFloat dist_sq(XnPoint3D a, XnPoint3D b);
 
 #endif
 

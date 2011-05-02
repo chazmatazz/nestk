@@ -582,11 +582,11 @@ void XN_CALLBACK_TYPE Drop(XnFloat fVelocity, XnFloat fAngle, void* UserCxt)
 
 /**
  * Callback for shapedrawer
- * This is called when shapedrawer is selected
+ * This is called when a shape is selected
  */
 void XN_CALLBACK_TYPE ShapeDrawer_Select(void *cxt) {
-    printState();
-    printf("Select detected for shape\n");
+    //printState();
+    //printf("Select detected for shape\n");
     setUserMode(SHAPE_MANIPULATION);
 }
 

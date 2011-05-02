@@ -18,6 +18,9 @@
 
 #define MAX_DIST_SQ 100
 #define MAX_DRIFT_DIST_SQ 100
+#define ROT_SPEED 10
+#define RESIZE_SPEED 10
+#define SHAPE_SIZE 50
 
 
 // Constructor. Receives the number of previous positions to store per hand,
@@ -85,25 +88,25 @@ void GktShapeDrawer::AddShape(int shapeType)
             shape = new RectPrism(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, 50, 50, 50, m_BoundingBox);
+                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
             break;
         case CYLINDER:
             shape = new Cylinder(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, 50, 50, 50, m_BoundingBox);
+                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
             break;
         case SHAPE3:
             shape = new RectPrism(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, 50, 50, 50, m_BoundingBox);
+                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
             break;
         case SHAPE4:
             shape = new RectPrism(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, 50, 50, 50, m_BoundingBox);
+                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
             break;
     }
 
@@ -181,10 +184,10 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                     m_CurrentShape->displace(d.X, d.Y, d.Z);
                     break;
                 case ROTATE:
-                    m_CurrentShape->rotate(d.X, d.Y);
+                    m_CurrentShape->rotate(a.X/ROT_SPEED, a.Y/ROT_SPEED);
                     break;
                 case STRETCH:
-                    m_CurrentShape->resize(d.X, d.Y, d.Z);
+                    m_CurrentShape->resize(a.X/RESIZE_SPEED, a.Y/RESIZE_SPEED, a.Z/RESIZE_SPEED);
                     break;
             }
              
@@ -203,7 +206,7 @@ void GktShapeDrawer::setHover(Shape* hover) {
 }
 void GktShapeDrawer::selectShape() {
     printf("ShapeDrawer: Selecting\n");
-    m_CurrentShape = m_ProspectiveShape; // warning: race condition?
+    m_CurrentShape = m_ProspectiveShape;
     setHover(NULL);
 }
 // Handle destruction of an existing hand

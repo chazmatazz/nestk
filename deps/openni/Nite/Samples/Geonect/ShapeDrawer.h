@@ -109,7 +109,7 @@ public:
     
 protected:
     static void XN_CALLBACK_TYPE ShapeSteady_OnSteady(XnFloat fVelocity, void* cxt) {
-        printf("Steady detected for shape\n");
+        //printf("Steady detected for shape\n");
         GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
         drawer->updateCounter();
         if(drawer->getCounter() == DISPLAY_DELAY) {

@@ -31,3 +31,12 @@ char* sButton(int button) {
             break;
     }
 }
+
+XnFloat dist_sq(XnPoint3D a, XnPoint3D b) {
+    XnPoint3D d;
+    d.X = a.X - b.X;
+    d.Y = a.Y - b.Y;
+    d.Z = a.Z - b.Z;
+    return d.X*d.X + d.Y*d.Y + d.Z*d.Z;
+    
+}

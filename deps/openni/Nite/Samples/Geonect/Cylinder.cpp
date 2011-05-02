@@ -65,6 +65,14 @@ void Cylinder::resize(float radius1, float radius2, float length)
 }
 float Cylinder::getDistSq(float a, float b, float c)
 {
-	return (this->xPos - a)*(this->xPos - a)+(this->yPos -b)*(this->yPos -b)+(this->zPos - c)*(this->zPos - c);
+    XnPoint3D pt1;
+    pt1.X = a;
+    pt1.Y = b;
+    pt1.Z = c;
+    XnPoint3D pt2;
+    pt2.X = this->xPos;
+    pt2.Y = this->yPos;
+    pt2.Z = this->zPos;
+    return dist_sq(pt1, pt2);
 }
 Cylinder::~Cylinder(void){}

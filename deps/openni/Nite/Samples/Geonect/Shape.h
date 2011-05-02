@@ -1,5 +1,7 @@
 #pragma once
 
+#include "common.h"
+
 typedef enum {
     DRAWSTATE_UNSELECTED,
     DRAWSTATE_HOVER,
