@@ -77,6 +77,12 @@ public:
     void Drop();
     
     /**
+     * Remove the currently selected shape from the shapes list
+     */
+    void RemoveCurrentShape();
+
+
+    /**
      * Add a new shape and select it
      */
     void AddShape(int shapeType);

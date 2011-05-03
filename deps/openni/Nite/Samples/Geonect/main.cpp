@@ -426,13 +426,15 @@ void selectButton(int v) {
         setUserMode(SHAPE_MANIPULATION);
         g_pShapeDrawer->AddShape(v);
         setTool(TRANSLATE);
-    } else { // tool
-        if(v == SHAPE_SUBMENU) {
-            setUserMode(SHAPE_SELECTION);
-        } else {
-            setUserMode(DESELECTED);
-            setTool(v);
-        }
+    } 
+    else { // tool
+      if(v == SHAPE_SUBMENU) {
+        setUserMode(SHAPE_SELECTION);
+      } 
+      else {
+        setUserMode(DESELECTED);
+        setTool(v);
+      }
     }
 }
 
@@ -484,7 +486,14 @@ void XN_CALLBACK_TYPE Drop(XnFloat fVelocity, XnFloat fAngle, void* UserCxt)
 void XN_CALLBACK_TYPE ShapeDrawer_Select(void *cxt) {
     //printState();
     //printf("Select detected for shape\n");
+  if(g_Tool == TRASH) {
+    // remove from shape list
+    g_pShapeDrawer->RemoveCurrentShape();
+    deselectObject();
+  }
+  else {
     setUserMode(SHAPE_MANIPULATION);
+  }
 }
 
 // this function is called each frame
@@ -627,7 +636,7 @@ void glInit (int * pargc, char ** argv)
     texture[TRANSLATE] = LoadTextureRAW("../../../textures/translate.raw", 0);
     texture[ROTATE] = LoadTextureRAW("../../../textures/rotate.raw", 0);
     texture[STRETCH] = LoadTextureRAW("../../../textures/stretch.raw", 0);
-    texture[BEND] = LoadTextureRAW("../../../textures/bend.raw", 0);
+    texture[TRASH] = LoadTextureRAW("../../../textures/trash.raw", 0);
     texture[SHAPE_SUBMENU] = LoadTextureRAW("../../../textures/shapes.raw", 0);
     texture[CUBE] = LoadTextureRAW("../../../textures/cube.raw", 0);
     texture[CYLINDER] = LoadTextureRAW("../../../textures/cylinder.raw", 0);

@@ -34,7 +34,7 @@ void Ellipsoid::draw(DrawState drawState)
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
     glScalef(this->radius1, this->radius2, this->radius3);
     setglColor(drawState, SIDE1); // side
-    glutSolidSphere(1, 8, 8);
+    glutWireSphere(1, 32, 8);
     glPopMatrix();
 }
 void Ellipsoid::rotate(float xRot,float yRot)

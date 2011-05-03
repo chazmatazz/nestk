@@ -67,9 +67,9 @@ void RectPrism::drawBox(DrawState drawState)
 {
 	glBegin(GL_QUADS);
 
-    setglColor(drawState, SIDE1);
+        setglColor(drawState, SIDE1);
 		// FRONT
-		glVertex3f(-width/2, -height/2, depth/2);
+        glVertex3f(-width/2, -height/2, depth/2);
 		glVertex3f( width/2, -height/2, depth/2);
 		glVertex3f( width/2, height/2, depth/2);
 		glVertex3f(-width/2, height/2, depth/2);
@@ -79,7 +79,7 @@ void RectPrism::drawBox(DrawState drawState)
 		glVertex3f( width/2, height/2, -depth/2);
 		glVertex3f( width/2, -height/2, -depth/2);
 
-		 setglColor(drawState, SIDE2);
+        setglColor(drawState, SIDE2);
 		// LEFT
 		glVertex3f(-width/2, -height/2, depth/2);
 		glVertex3f(-width/2, height/2, depth/2);

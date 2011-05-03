@@ -11,8 +11,8 @@
 #define TRANSLATE 4
 #define ROTATE 5
 #define STRETCH 6
-#define BEND 7
-#define SHAPE_SUBMENU 8
+#define SHAPE_SUBMENU 7
+#define TRASH 8
 
 #define DISPLAY_DELAY 2
 

@@ -23,8 +23,8 @@ char* sButton(int button) {
         case STRETCH:
             return "STRETCH";
             break;
-        case BEND:
-            return "BEND";
+        case TRASH:
+            return "TRASH";
             break;
         case SHAPE_SUBMENU:
             return "SHAPE_SUBMENU";

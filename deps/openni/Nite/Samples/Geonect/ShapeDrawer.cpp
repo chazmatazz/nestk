@@ -80,6 +80,10 @@ void GktShapeDrawer::SetTool(int tool)
 void GktShapeDrawer::Drop() {
     m_CurrentShape = NULL;
 }
+void GktShapeDrawer::RemoveCurrentShape() 
+{
+  m_Shapes.remove(m_CurrentShape);
+}
 void GktShapeDrawer::AddShape(int shapeType)
 {
     XnPoint3D ptCurr(m_History[GetPrimaryID()].front());
@@ -96,19 +100,19 @@ void GktShapeDrawer::AddShape(int shapeType)
             shape = new Cylinder(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  90, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
+                                  80, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
             break;
         case CONE:
             shape = new Cone(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
+                                  0, 60, SHAPE_SIZE/2, SHAPE_SIZE, m_BoundingBox);
             break;
         case ELLIPSOID:
             shape = new Ellipsoid(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
+                                  30, 30, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
             break;
     }
 
