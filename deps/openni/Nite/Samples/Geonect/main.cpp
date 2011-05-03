@@ -123,7 +123,7 @@ char* sBool(XnBool b) {
     }
 }
 
-// load a 50x50 RGB .RAW file as a texture
+// load a 64x64 RGB .RAW file as a texture
 GLuint LoadTextureRAW( const char * filename, int wrap )
 {
     GLuint texture;
@@ -630,11 +630,11 @@ void glInit (int * pargc, char ** argv)
     texture[ROTATE] = LoadTextureRAW("../../../textures/rotate.raw", 0);
     texture[STRETCH] = LoadTextureRAW("../../../textures/stretch.raw", 0);
     texture[BEND] = LoadTextureRAW("../../../textures/bend.raw", 0);
-    texture[SHAPE_SUBMENU] = LoadTextureRAW("../../../textures/shape_submenu.raw", 0);
+    texture[SHAPE_SUBMENU] = LoadTextureRAW("../../../textures/shapes.raw", 0);
     texture[CUBE] = LoadTextureRAW("../../../textures/cube.raw", 0);
     texture[CYLINDER] = LoadTextureRAW("../../../textures/cylinder.raw", 0);
     texture[CONE] = LoadTextureRAW("../../../textures/cone.raw", 0);
-    texture[ELLIPSOID] = LoadTextureRAW("../../../textures/ellipsoid.raw", 0);
+    texture[ELLIPSOID] = LoadTextureRAW("../../../textures/ellipsoid2.raw", 0);
 
 }
 #endif
