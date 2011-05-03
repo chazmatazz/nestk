@@ -27,9 +27,9 @@ Cylinder::Cylinder(XnPoint3D center, XnFloat xRot, XnFloat yRot, XnFloat radius,
 
 void Cylinder::draw(DrawState drawState)
 {
-    if(drawState == DRAWSTATE_HOVER) {
-        drawBoundingBox(getBoundingBox());
-    }
+    //if(drawState == DRAWSTATE_HOVER) {
+    //    drawBoundingBox(getBoundingBox());
+    //}
 	glPushMatrix();
     glTranslatef(this->center.X,this->center.Y,this->center.Z);
 	glTranslatef(0.0f,0.0f,-10.0f);

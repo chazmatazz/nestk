@@ -25,9 +25,9 @@ Cone::Cone(XnPoint3D center, XnFloat xRot, XnFloat yRot, XnFloat radius, XnFloat
 
 void Cone::draw(DrawState drawState)
 {
-    if(drawState == DRAWSTATE_HOVER) {
-        drawBoundingBox(getBoundingBox());
-    }
+    //if(drawState == DRAWSTATE_HOVER) {
+    //    drawBoundingBox(getBoundingBox());
+    //}
 	glPushMatrix();
 	glTranslatef(0.0f,0.0f,-10.0f);
 	glTranslatef(this->center.X,this->center.Y,this->center.Z);
