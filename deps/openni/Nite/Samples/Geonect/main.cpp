@@ -633,8 +633,8 @@ void glInit (int * pargc, char ** argv)
     texture[SHAPE_SUBMENU] = LoadTextureRAW("../../../textures/shape_submenu.raw", 0);
     texture[CUBE] = LoadTextureRAW("../../../textures/cube.raw", 0);
     texture[CYLINDER] = LoadTextureRAW("../../../textures/cylinder.raw", 0);
-    texture[SHAPE3] = LoadTextureRAW("../../../textures/shape3.raw", 0);
-    texture[SHAPE4] = LoadTextureRAW("../../../textures/shape4.raw", 0);
+    texture[CONE] = LoadTextureRAW("../../../textures/cone.raw", 0);
+    texture[ELLIPSOID] = LoadTextureRAW("../../../textures/ellipsoid.raw", 0);
 
 }
 #endif

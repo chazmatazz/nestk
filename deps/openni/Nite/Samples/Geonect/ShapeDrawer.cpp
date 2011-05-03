@@ -15,11 +15,13 @@
 
 #include "RectPrism.h"
 #include "Cylinder.h"
+#include "Cone.h"
+#include "Ellipsoid.h"
 
 #define MAX_DIST_SQ 100
 #define MAX_DRIFT_DIST_SQ 100
-#define ROT_SPEED 10
-#define RESIZE_SPEED 10
+#define ROT_SPEED 5
+#define RESIZE_SPEED 5
 #define SHAPE_SIZE 50
 
 
@@ -96,14 +98,14 @@ void GktShapeDrawer::AddShape(int shapeType)
                                   ptCurr.Z, 
                                   90, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
             break;
-        case SHAPE3:
-            shape = new RectPrism(ptCurr.X, 
+        case CONE:
+            shape = new Cone(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
+                                  0, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
             break;
-        case SHAPE4:
-            shape = new RectPrism(ptCurr.X, 
+        case ELLIPSOID:
+            shape = new Ellipsoid(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
                                   0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
@@ -184,7 +186,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                     m_CurrentShape->displace(d.X, d.Y, d.Z);
                     break;
                 case ROTATE:
-                    m_CurrentShape->rotate(a.X/ROT_SPEED, a.Y/ROT_SPEED);
+                    m_CurrentShape->rotate(d.X/ROT_SPEED, d.Y/ROT_SPEED);
                     break;
                 case STRETCH:
                     m_CurrentShape->resize(d.X/RESIZE_SPEED, d.Y/RESIZE_SPEED, d.Z/RESIZE_SPEED);

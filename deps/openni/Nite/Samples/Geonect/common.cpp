@@ -8,11 +8,11 @@ char* sButton(int button) {
         case CYLINDER:
             return "CYLINDER";
             break;
-        case SHAPE3:
-            return "SHAPE3";
+        case CONE:
+            return "CONE";
             break;
-        case SHAPE4:
-            return "SHAPE4";
+        case ELLIPSOID:
+            return "ELLIPSOID";
             break;
         case TRANSLATE:
             return "TRANSLATE";

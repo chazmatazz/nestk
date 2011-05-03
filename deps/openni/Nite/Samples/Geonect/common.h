@@ -6,8 +6,8 @@
 
 #define CUBE 0
 #define CYLINDER 1
-#define SHAPE3 2
-#define SHAPE4 3
+#define CONE 2
+#define ELLIPSOID 3
 #define TRANSLATE 4
 #define ROTATE 5
 #define STRETCH 6

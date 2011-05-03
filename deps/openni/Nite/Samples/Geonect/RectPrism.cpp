@@ -36,8 +36,8 @@ void RectPrism::draw(DrawState drawState)
 
 void RectPrism::rotate(float xRot,float yRot)
 {
-	this->xRot = xRot;
-	this->yRot = yRot;
+	this->xRot += xRot;
+	this->yRot += yRot;
 }
 void RectPrism::displace(float x, float y, float z)
 {
