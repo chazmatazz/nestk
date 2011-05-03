@@ -63,7 +63,7 @@ void Cylinder::resize(float radius1, float radius2, float length)
 	this->radius2 += radius2;
 	this->length += length;
 }
-float Cylinder::getDistSq(float a, float b, float c)
+float Cylinder::getCenterDistSq(float a, float b, float c)
 {
     XnPoint3D pt1;
     pt1.X = a;

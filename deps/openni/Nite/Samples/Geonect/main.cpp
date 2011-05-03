@@ -77,7 +77,9 @@ using namespace std;
 
 #include "common.h"
 
-GLuint texture[8];
+const int NUM_SHAPE_BUTTONS = 4;
+const int NUM_TOOL_BUTTONS = 5;
+GLuint texture[NUM_SHAPE_BUTTONS+NUM_TOOL_BUTTONS];
 
 typedef enum {
     NO_HANDS, // no hands yet
@@ -239,127 +241,26 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
     glLineWidth(width);
     glPushMatrix();
     glTranslatef(center_x, center_y, 0);
-    //glRotatef(rotation, 0, 1, 0);
+    
+    // draw texture
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture[i]);	
+    glBegin (GL_QUADS);
+    glTexCoord2f (0.0, 0.0);
+    glVertex3f (0.0, 0.0, 0.0);
+    glTexCoord2f (1.0, 0.0);
+    glVertex3f (size, 0.0, 0.0);
+    glTexCoord2f (1.0, 1.0);
+    //glTexCoord2f (0.0, 1.0);
+    glVertex3f (size, size, 0.0);
+    glTexCoord2f (0.0, 1.0);
+    //glTexCoord2f (1.0, 1.0);
+    glVertex3f (0.0, size, 0.0);
+    glEnd ();
 
-    switch (i) {
-        case CUBE:
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, texture[4]);	
-            glBegin (GL_QUADS);
-              glTexCoord2f (0.0, 0.0);
-              glVertex3f (0.0, 0.0, 0.0);
-              glTexCoord2f (1.0, 0.0);
-              glVertex3f (size, 0.0, 0.0);
-              glTexCoord2f (1.0, 1.0);
-              //glTexCoord2f (0.0, 1.0);
-              glVertex3f (size, size, 0.0);
-              glTexCoord2f (0.0, 1.0);
-              //glTexCoord2f (1.0, 1.0);
-              glVertex3f (0.0, size, 0.0);
-            glEnd ();
-		
-            glDisable(GL_TEXTURE_2D);
-            break;
-        case CYLINDER:
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, texture[5]);	
-            glBegin (GL_QUADS);
-              glTexCoord2f (0.0, 0.0);
-              glVertex3f (0.0, 0.0, 0.0);
-              glTexCoord2f (1.0, 0.0);
-              glVertex3f (size, 0.0, 0.0);
-              glTexCoord2f (1.0, 1.0);
-              //glTexCoord2f (0.0, 1.0);
-              glVertex3f (size, size, 0.0);
-              glTexCoord2f (0.0, 1.0);
-              //glTexCoord2f (1.0, 1.0);
-              glVertex3f (0.0, size, 0.0);
-            glEnd ();
-		
-            glDisable(GL_TEXTURE_2D);
-            break;
-        case SHAPE3:
-            break;
-        case SHAPE4:
-            break;
-        case TRANSLATE:
-          // Map texture for translate
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, texture[0]);	
-            glBegin (GL_QUADS);
-              glTexCoord2f (0.0, 0.0);
-              glVertex3f (0.0, 0.0, 0.0);
-              glTexCoord2f (1.0, 0.0);
-              glVertex3f (size, 0.0, 0.0);
-              glTexCoord2f (1.0, 1.0);
-              //glTexCoord2f (0.0, 1.0);
-              glVertex3f (size, size, 0.0);
-              glTexCoord2f (0.0, 1.0);
-              //glTexCoord2f (1.0, 1.0);
-              glVertex3f (0.0, size, 0.0);
-            glEnd ();
-		
-            glDisable(GL_TEXTURE_2D);
-            //DrawTranslate(center_x, center_y, size, width, r, g, b);
-            break;
-        case ROTATE: 
-            // temp until tool representation
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, texture[1]);	
-            glBegin (GL_QUADS);
-              glTexCoord2f (0.0, 0.0);
-              glVertex3f (0.0, 0.0, 0.0);
-              glTexCoord2f (1.0, 0.0);
-              glVertex3f (size, 0.0, 0.0);
-              glTexCoord2f (1.0, 1.0);
-              //glTexCoord2f (0.0, 1.0);
-              glVertex3f (size, size, 0.0);
-              glTexCoord2f (0.0, 1.0);
-              //glTexCoord2f (1.0, 1.0);
-              glVertex3f (0.0, size, 0.0);
-            glEnd ();
-		
-            glDisable(GL_TEXTURE_2D);
-            break;
-        case STRETCH:
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, texture[2]);	
-            glBegin (GL_QUADS);
-              glTexCoord2f (0.0, 0.0);
-              glVertex3f (0.0, 0.0, 0.0);
-              glTexCoord2f (1.0, 0.0);
-              glVertex3f (size, 0.0, 0.0);
-              glTexCoord2f (1.0, 1.0);
-              //glTexCoord2f (0.0, 1.0);
-              glVertex3f (size, size, 0.0);
-              glTexCoord2f (0.0, 1.0);
-              //glTexCoord2f (1.0, 1.0);
-              glVertex3f (0.0, size, 0.0);
-            glEnd ();
-		
-            glDisable(GL_TEXTURE_2D);
-            break;
-        case BEND:
-            glEnable(GL_TEXTURE_2D);
-            glBindTexture(GL_TEXTURE_2D, texture[3]);	
-            glBegin (GL_QUADS);
-              glTexCoord2f (0.0, 0.0);
-              glVertex3f (0.0, 0.0, 0.0);
-              glTexCoord2f (1.0, 0.0);
-              glVertex3f (size, 0.0, 0.0);
-              glTexCoord2f (1.0, 1.0);
-              //glTexCoord2f (0.0, 1.0);
-              glVertex3f (size, size, 0.0);
-              glTexCoord2f (0.0, 1.0);
-              //glTexCoord2f (1.0, 1.0);
-              glVertex3f (0.0, size, 0.0);
-            glEnd ();
-		
-            glDisable(GL_TEXTURE_2D);
-            break;
-        case SHAPE_SUBMENU:
-            break;
-    }
+    glDisable(GL_TEXTURE_2D);
+    
+    // end draw texture
     glPopMatrix();
 }
 
@@ -392,8 +293,6 @@ XnVCircleDetector*  g_pCircle;
 XnVPushDetector* g_pPush;
 XnVSteadyDetector* g_pSteadyDetector;
 
-const int NUM_SHAPE_BUTTONS = 4;
-const int NUM_TOOL_BUTTONS = 5;
 SteadyButton* g_pSButton[NUM_SHAPE_BUTTONS];
 SteadyButton* g_pTButton[NUM_TOOL_BUTTONS];
 
@@ -628,8 +527,7 @@ void glutDisplay (void)
     // shapedrawer, steadybuttons draw on update
     
     // Draw the tool icon if in manipulation mode
-    if(g_UserMode == SHAPE_MANIPULATION) {
-      // Temporary just to draw something for state
+    if(g_UserMode == SHAPE_MANIPULATION || g_UserMode == DESELECTED) {
       DrawTool(20, 20, 0, g_Tool, size, 1);
     }
 
@@ -728,12 +626,15 @@ void glInit (int * pargc, char ** argv)
     glMaterialfv( GL_FRONT, GL_SPECULAR, spectre );
     glMateriali( GL_FRONT, GL_SHININESS, 128 );
 
-    texture[0] = LoadTextureRAW("../../../textures/translate.raw", 0);
-    texture[1] = LoadTextureRAW("../../../textures/rotate.raw", 0);
-    texture[2] = LoadTextureRAW("../../../textures/stretch.raw", 0);
-    texture[3] = LoadTextureRAW("../../../textures/Bend.raw", 0);
-    texture[4] = LoadTextureRAW("../../../textures/cube.raw", 0);
-    texture[5] = LoadTextureRAW("../../../textures/cylinder.raw", 0);
+    texture[TRANSLATE] = LoadTextureRAW("../../../textures/translate.raw", 0);
+    texture[ROTATE] = LoadTextureRAW("../../../textures/rotate.raw", 0);
+    texture[STRETCH] = LoadTextureRAW("../../../textures/stretch.raw", 0);
+    texture[BEND] = LoadTextureRAW("../../../textures/bend.raw", 0);
+    texture[SHAPE_SUBMENU] = LoadTextureRAW("../../../textures/shape_submenu.raw", 0);
+    texture[CUBE] = LoadTextureRAW("../../../textures/cube.raw", 0);
+    texture[CYLINDER] = LoadTextureRAW("../../../textures/cylinder.raw", 0);
+    texture[SHAPE3] = LoadTextureRAW("../../../textures/shape3.raw", 0);
+    texture[SHAPE4] = LoadTextureRAW("../../../textures/shape4.raw", 0);
 
 }
 #endif

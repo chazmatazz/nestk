@@ -94,7 +94,7 @@ void GktShapeDrawer::AddShape(int shapeType)
             shape = new Cylinder(ptCurr.X, 
                                   ptCurr.Y, 
                                   ptCurr.Z, 
-                                  0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
+                                  90, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
             break;
         case SHAPE3:
             shape = new RectPrism(ptCurr.X, 
@@ -151,7 +151,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
             XnBool bHover = false;
             XnPoint3D curr = m_History[cxt->nID].front();
             if(isHover()) { // if there is a prospective shape, see if we are still hovering it
-                XnFloat dist_sq = m_ProspectiveShape->getDistSq(curr.X, curr.Y, curr.Z);
+                XnFloat dist_sq = m_ProspectiveShape->getCenterDistSq(curr.X, curr.Y, curr.Z);
                 bHover = dist_sq < MAX_DRIFT_DIST_SQ;
             }
             if(!bHover) { // if we are not hovering a prospective
@@ -164,7 +164,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                      ++ShapeIterator)
                 {
                     Shape* shape = *ShapeIterator;
-                    XnFloat dist_sq = shape->getDistSq(curr.X, curr.Y, curr.Z);
+                    XnFloat dist_sq = shape->getCenterDistSq(curr.X, curr.Y, curr.Z);
                     if(dist_sq < MAX_DIST_SQ && dist_sq < min_dist_sq) {
                         min_dist_sq = dist_sq;
                         min_shape = shape;
@@ -187,7 +187,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                     m_CurrentShape->rotate(a.X/ROT_SPEED, a.Y/ROT_SPEED);
                     break;
                 case STRETCH:
-                    m_CurrentShape->resize(a.X/RESIZE_SPEED, a.Y/RESIZE_SPEED, a.Z/RESIZE_SPEED);
+                    m_CurrentShape->resize(d.X/RESIZE_SPEED, d.Y/RESIZE_SPEED, d.Z/RESIZE_SPEED);
                     break;
             }
              

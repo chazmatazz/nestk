@@ -51,7 +51,7 @@ void RectPrism::resize(float width, float height, float depth)
 	this->height += height;
 	this->depth += depth;
 }
-float RectPrism::getDistSq(float a, float b, float c)
+float RectPrism::getCenterDistSq(float a, float b, float c)
 {
     XnPoint3D pt1;
     pt1.X = a;

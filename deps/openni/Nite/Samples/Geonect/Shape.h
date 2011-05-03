@@ -21,7 +21,7 @@ class Shape
 public:
 	Shape(void);
 	~Shape(void);
-	virtual float getDistSq(float a, float b, float c)  = 0;
+	virtual float getCenterDistSq(float a, float b, float c)  = 0;
 	virtual void draw(DrawState drawState) = 0;
 	virtual void rotate(float xRot,float yRot) = 0;
 	virtual void displace(float x, float y, float z) = 0;
