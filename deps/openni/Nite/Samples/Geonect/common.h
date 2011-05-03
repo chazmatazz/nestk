@@ -14,7 +14,8 @@
 #define SHAPE_SUBMENU 7
 #define TRASH 8
 
-#define DISPLAY_DELAY 2
+#define BUTTON_DELAY 4
+#define SHAPE_SELECTION_DELAY 3
 
 // Affects the existence and color of the Button in drawing
 typedef enum {

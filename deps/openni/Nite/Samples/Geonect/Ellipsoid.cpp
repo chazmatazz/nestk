@@ -12,11 +12,9 @@
 #include "Ellipsoid.h"
 
 
-Ellipsoid::Ellipsoid(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float radius3, XnBoundingBox3D& boundingBox)
+Ellipsoid::Ellipsoid(XnPoint3D center, XnFloat xRot, XnFloat yRot, XnFloat radius1, XnFloat radius2, XnFloat radius3, XnBoundingBox3D& boundingBox)
 {
-	this->xPos = x;
-	this->yPos = y;
-	this->zPos = z;
+	this->center = center;
 	this->xRot = xRot;
 	this->yRot = yRot;
     this->radius1 = radius1;
@@ -27,9 +25,12 @@ Ellipsoid::Ellipsoid(float x, float y, float z, float xRot, float yRot, float ra
 
 void Ellipsoid::draw(DrawState drawState)
 {
+    if(drawState == DRAWSTATE_HOVER) {
+        drawBoundingBox(getBoundingBox());
+    }
 	glPushMatrix();
 	glTranslatef(0.0f,0.0f,-10.0f);
-	glTranslatef(this->xPos,this->yPos,this->zPos);
+	glTranslatef(this->center.X,this->center.Y,this->center.Z);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
     glScalef(this->radius1, this->radius2, this->radius3);
@@ -37,33 +38,58 @@ void Ellipsoid::draw(DrawState drawState)
     glutWireSphere(1, 32, 8);
     glPopMatrix();
 }
-void Ellipsoid::rotate(float xRot,float yRot)
+void Ellipsoid::rotate(XnPoint3D d)
 {
-	this->xRot += xRot;
-	this->yRot += yRot;
+    // intentionally swapped
+	this->xRot += d.Y;
+	this->yRot += d.X;
 }
-void Ellipsoid::displace(float x, float y, float z)
+void Ellipsoid::displace(XnPoint3D d)
 {
-	this->xPos += x;
-	this->yPos += y;
-	this->zPos += z;
+	this->center.X += d.X;
+	this->center.Y += d.Y;
+	this->center.Z += d.Z;
+    clamp_point(center, boundingBox);
+
 }
-void Ellipsoid::resize(float x, float y, float z)
+void Ellipsoid::resize(XnPoint3D d)
 {
-	this->radius1 += x;
-	this->radius2 += y;
-    this->radius3 += z;
+	this->radius1 += d.X;
+	this->radius2 += d.Y;
+    this->radius3 += d.Z;
+    clamp_val(radius1, SIZE_MIN_DIM/2, SIZE_MAX_DIM/2);
+    clamp_val(radius2, SIZE_MIN_DIM/2, SIZE_MAX_DIM/2);
+    clamp_val(radius3, SIZE_MIN_DIM/2, SIZE_MAX_DIM/2);
 }
-float Ellipsoid::getCenterDistSq(float a, float b, float c)
+XnPoint3D Ellipsoid::getCenter() {
+    return center;
+}
+XnPoint3D Ellipsoid::getBoundingBoxSize() {
+    XnFloat max;
+    if(radius1 > radius2) {
+        max = radius1;
+    } else {
+        max = radius2;
+    }
+    if(radius3 > max) {
+        max = radius3;
+    }
+    max *= 2 * SHRINK;
+    XnPoint3D size;
+    size.X = max;
+    size.Y = max;
+    size.Z = max;
+    return size;
+}
+XnBoundingBox3D Ellipsoid::getBoundingBox() {
+    return calcBoundingBox(getCenter(), getBoundingBoxSize());
+}
+XnFloat Ellipsoid::getCenterDistSq(XnPoint3D p)
 {
-    XnPoint3D pt1;
-    pt1.X = a;
-    pt1.Y = b;
-    pt1.Z = c;
-    XnPoint3D pt2;
-    pt2.X = this->xPos;
-    pt2.Y = this->yPos;
-    pt2.Z = this->zPos;
-    return dist_sq(pt1, pt2);
+    return dist_sq(p, getCenter());
 }
+XnBool Ellipsoid::isInside(XnPoint3D p) {
+    return inBoundingBox(p, getBoundingBox());
+}
+
 Ellipsoid::~Ellipsoid(void){}

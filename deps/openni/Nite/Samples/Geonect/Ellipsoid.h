@@ -14,19 +14,21 @@
 class Ellipsoid :public Shape
 {
 public:
-	Ellipsoid(float x, float y, float z, float xRot, float yRot, float radius1, float radius2, float radius3, XnBoundingBox3D& boundingBox);
+	Ellipsoid(XnPoint3D center, XnFloat xRot, XnFloat yRot, XnFloat radius1, XnFloat radius2, XnFloat radius3, XnBoundingBox3D& boundingBox);
 	~Ellipsoid(void);
 	void draw(DrawState drawState);
-	void rotate(float xRot,float yRot);
-	void displace(float x, float y, float z);
-	void resize(float width, float height, float depth);
-	float getCenterDistSq(float a, float b, float c);
-    float getXPos(void) { return xPos;}
-    float getYPos(void) { return yPos;}
-    float getZPos(void) { return zPos;}
+	void rotate(XnPoint3D d);
+	void displace(XnPoint3D d);
+	void resize(XnPoint3D d);
+    XnPoint3D getCenter();
+    XnPoint3D getBoundingBoxSize();
+    XnBoundingBox3D getBoundingBox();
+    XnFloat getCenterDistSq(XnPoint3D p);
+    XnBool isInside(XnPoint3D p);
+
 private:
-	float xPos,yPos,zPos;
-	float xRot,yRot;
-	float radius1,radius2,radius3;
+	XnPoint3D center;
+	XnFloat xRot,yRot;
+	XnFloat radius1,radius2,radius3;
     XnBoundingBox3D boundingBox;
 };

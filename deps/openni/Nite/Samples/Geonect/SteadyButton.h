@@ -33,7 +33,6 @@
 // This results in a button that responds to pushes (and raises the Leave event), and to swipes and steadys,
 // in turn, which effect some internal state, which is reflected in the drawing.
 
-const float ROT_SPEED = 0.1f;
 
 class SteadyButton : public XnVPointControl
 {
@@ -208,7 +207,7 @@ private:
         printf("button steady\n");
 		SteadyButton* button = (SteadyButton*)(cxt);
         button->updateCounter();
-        if(button->getCounter() == DISPLAY_DELAY) {
+        if(button->getCounter() == BUTTON_DELAY) {
             button->Select();
         }
 	}

@@ -10,11 +10,9 @@
 
 
 
-RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float width, float height, float depth, XnBoundingBox3D& boundingBox)
+RectPrism::RectPrism(XnPoint3D center, XnFloat xRot, XnFloat yRot, XnFloat width, XnFloat height, XnFloat depth, XnBoundingBox3D& boundingBox)
 {
-	this->xPos = x;
-	this->yPos = y;
-	this->zPos = z;
+    this->center = center;
 	this->xRot = xRot;
 	this->yRot = yRot;
 	this->width = width;
@@ -25,44 +23,71 @@ RectPrism::RectPrism(float x, float y, float z, float xRot, float yRot, float wi
 
 void RectPrism::draw(DrawState drawState)
 {
+    if(drawState == DRAWSTATE_HOVER) {
+        drawBoundingBox(getBoundingBox());
+    }
 	glPushMatrix();
 	glTranslatef(0.0f,0.0f,-10.0f);
-	glTranslatef(this->xPos,this->yPos,this->zPos);
+	glTranslatef(this->center.X,this->center.Y,this->center.Z);
 	glRotatef(this->xRot, 1.0f, 0.0f, 0.0f);
 	glRotatef(this->yRot, 0.0f, 1.0f, 0.0f);
 	drawBox(drawState);
 	glPopMatrix();
 }
 
-void RectPrism::rotate(float xRot,float yRot)
+void RectPrism::rotate(XnPoint3D d)
 {
-	this->xRot += xRot;
-	this->yRot += yRot;
+    // intentionally swapped
+	this->xRot += d.Y;
+	this->yRot += d.X;
 }
-void RectPrism::displace(float x, float y, float z)
+void RectPrism::displace(XnPoint3D d)
 {
-	this->xPos += x;
-	this->yPos += y;
-	this->zPos += z;
+	this->center.X += d.X;
+	this->center.Y += d.Y;
+	this->center.Z += d.Z;
+    clamp_point(center, boundingBox);
 }
-void RectPrism::resize(float width, float height, float depth)
+void RectPrism::resize(XnPoint3D d)
 {
-	this->width += width;
-	this->height += height;
-	this->depth += depth;
+	this->width += d.X;
+	this->height += d.Y;
+	this->depth += d.Z;
+    clamp_val(width, SIZE_MIN_DIM/2, SIZE_MAX_DIM/2);
+    clamp_val(height, SIZE_MIN_DIM/2, SIZE_MAX_DIM/2);
+    clamp_val(height, SIZE_MIN_DIM/2, SIZE_MAX_DIM/2);
 }
-float RectPrism::getCenterDistSq(float a, float b, float c)
+XnPoint3D RectPrism::getCenter() {
+    return center;
+}
+XnPoint3D RectPrism::getBoundingBoxSize() {
+    XnFloat max;
+    if(width > height) {
+        max = width;
+    } else {
+        max = height;
+    }
+    if(depth > max) {
+        max = depth;
+    }
+    max *= SQRT_2 * SHRINK;
+    XnPoint3D size;
+    size.X = max;
+    size.Y = max;
+    size.Z = max;
+    return size;
+}
+XnBoundingBox3D RectPrism::getBoundingBox() {
+    return calcBoundingBox(getCenter(), getBoundingBoxSize());
+}
+float RectPrism::getCenterDistSq(XnPoint3D p)
 {
-    XnPoint3D pt1;
-    pt1.X = a;
-    pt1.Y = b;
-    pt1.Z = c;
-    XnPoint3D pt2;
-    pt2.X = this->xPos;
-    pt2.Y = this->yPos;
-    pt2.Z = this->zPos;
-    return dist_sq(pt1, pt2);
+    return dist_sq(p, getCenter());
 }
+XnBool RectPrism::isInside(XnPoint3D p) {
+    return inBoundingBox(p, getBoundingBox());
+}
+
 void RectPrism::drawBox(DrawState drawState)
 {
 	glBegin(GL_QUADS);

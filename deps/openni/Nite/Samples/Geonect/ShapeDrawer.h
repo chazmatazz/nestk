@@ -118,7 +118,7 @@ protected:
         //printf("Steady detected for shape\n");
         GktShapeDrawer* drawer = (GktShapeDrawer*)(cxt);
         drawer->updateCounter();
-        if(drawer->getCounter() == DISPLAY_DELAY) {
+        if(drawer->getCounter() == SHAPE_SELECTION_DELAY) {
             if(drawer->isHover()) {
                 printf("selecting shape\n");
                 drawer->selectShape();

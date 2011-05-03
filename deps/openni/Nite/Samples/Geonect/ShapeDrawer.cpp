@@ -18,11 +18,9 @@
 #include "Cone.h"
 #include "Ellipsoid.h"
 
-#define MAX_DIST_SQ 100
-#define MAX_DRIFT_DIST_SQ 100
-#define ROT_SPEED 1
+#define ROTATE_SPEED 1
 #define RESIZE_SPEED 1
-#define SHAPE_SIZE 50
+#define SHAPE_SIZE 70
 
 
 // Constructor. Receives the number of previous positions to store per hand,
@@ -91,28 +89,20 @@ void GktShapeDrawer::AddShape(int shapeType)
     Shape* shape;
     switch(shapeType) {
         case CUBE:
-            shape = new RectPrism(ptCurr.X, 
-                                  ptCurr.Y, 
-                                  ptCurr.Z, 
+            shape = new RectPrism(ptCurr, 
                                   0, 0, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
             break;
         case CYLINDER:
-            shape = new Cylinder(ptCurr.X, 
-                                  ptCurr.Y, 
-                                  ptCurr.Z, 
-                                  80, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
+            shape = new Cylinder(ptCurr, 
+                                  80, 0, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
             break;
         case CONE:
-            shape = new Cone(ptCurr.X, 
-                                  ptCurr.Y, 
-                                  ptCurr.Z, 
+            shape = new Cone(ptCurr, 
                                   0, 60, SHAPE_SIZE/2, SHAPE_SIZE, m_BoundingBox);
             break;
         case ELLIPSOID:
-            shape = new Ellipsoid(ptCurr.X, 
-                                  ptCurr.Y, 
-                                  ptCurr.Z, 
-                                  30, 30, SHAPE_SIZE, SHAPE_SIZE, SHAPE_SIZE, m_BoundingBox);
+            shape = new Ellipsoid(ptCurr, 
+                                  30, 30, SHAPE_SIZE/2, SHAPE_SIZE/2, SHAPE_SIZE/2, m_BoundingBox);
             break;
     }
 
@@ -157,12 +147,11 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
             XnBool bHover = false;
             XnPoint3D curr = m_History[cxt->nID].front();
             if(isHover()) { // if there is a prospective shape, see if we are still hovering it
-                XnFloat dist_sq = m_ProspectiveShape->getCenterDistSq(curr.X, curr.Y, curr.Z);
-                bHover = dist_sq < MAX_DRIFT_DIST_SQ;
+                bHover = m_ProspectiveShape->isInside(curr);
             }
             if(!bHover) { // if we are not hovering a prospective
                 // see if we are over a shape
-                XnFloat min_dist_sq = MAX_DIST_SQ+1;
+                XnFloat min_center_dist_sq;
                 Shape* min_shape = NULL;
                 std::list<Shape*>::const_iterator ShapeIterator;
                 for (ShapeIterator = m_Shapes.begin();
@@ -170,11 +159,17 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                      ++ShapeIterator)
                 {
                     Shape* shape = *ShapeIterator;
-                    XnFloat dist_sq = shape->getCenterDistSq(curr.X, curr.Y, curr.Z);
-                    if(dist_sq < MAX_DIST_SQ && dist_sq < min_dist_sq) {
-                        min_dist_sq = dist_sq;
-                        min_shape = shape;
+                    XnBool isInside = shape->isInside(curr);
+                    
+                    if(isInside) {
+                        XnFloat center_dist_sq = shape->getCenterDistSq(curr);
+                        // break overlapping shape ties by center distance
+                        if(min_shape == NULL || center_dist_sq < min_center_dist_sq) {
+                            min_center_dist_sq = center_dist_sq;
+                            min_shape = shape;
+                        }
                     }
+                    
                 }
                 setHover(min_shape);
             } 
@@ -187,13 +182,19 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
             d.Z = a.Z - b.Z;
             switch(m_Tool) {
                 case TRANSLATE:
-                    m_CurrentShape->displace(d.X, d.Y, d.Z);
+                    m_CurrentShape->displace(d);
                     break;
                 case ROTATE:
-                    m_CurrentShape->rotate(d.Y/ROT_SPEED, d.X/ROT_SPEED);
+                    d.X /= ROTATE_SPEED;
+                    d.Y /= ROTATE_SPEED;
+                    d.Z /= ROTATE_SPEED;
+                    m_CurrentShape->rotate(d);
                     break;
                 case STRETCH:
-                    m_CurrentShape->resize(d.X/RESIZE_SPEED, d.Y/RESIZE_SPEED, d.Z/RESIZE_SPEED);
+                    d.X /= RESIZE_SPEED;
+                    d.Y /= RESIZE_SPEED;
+                    d.Z /= RESIZE_SPEED;
+                    m_CurrentShape->resize(d);
                     break;
             }
              
