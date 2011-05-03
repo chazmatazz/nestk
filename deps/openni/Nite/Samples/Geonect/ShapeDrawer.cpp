@@ -186,7 +186,7 @@ void GktShapeDrawer::OnPointUpdate(const XnVHandPointContext* cxt)
                     m_CurrentShape->displace(d.X, d.Y, d.Z);
                     break;
                 case ROTATE:
-                    m_CurrentShape->rotate(d.X/ROT_SPEED, d.Y/ROT_SPEED);
+                    m_CurrentShape->rotate(d.Y/ROT_SPEED, d.X/ROT_SPEED);
                     break;
                 case STRETCH:
                     m_CurrentShape->resize(d.X/RESIZE_SPEED, d.Y/RESIZE_SPEED, d.Z/RESIZE_SPEED);

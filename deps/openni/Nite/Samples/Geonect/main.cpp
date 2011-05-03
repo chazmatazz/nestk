@@ -251,10 +251,8 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
     glTexCoord2f (1.0, 0.0);
     glVertex3f (size, 0.0, 0.0);
     glTexCoord2f (1.0, 1.0);
-    //glTexCoord2f (0.0, 1.0);
     glVertex3f (size, size, 0.0);
     glTexCoord2f (0.0, 1.0);
-    //glTexCoord2f (1.0, 1.0);
     glVertex3f (0.0, size, 0.0);
     glEnd ();
 
@@ -276,7 +274,7 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 #define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
 #define STEADY_DELAY 10
 
-#define ZMIN 0
+#define ZMIN -100
 #define ZMAX 800
 
 // OpenNI objects
