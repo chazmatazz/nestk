@@ -274,8 +274,8 @@ void DrawTool(XnFloat center_x, XnFloat center_y, float rotation, int i, int siz
 #define SAMPLE_XML_PATH "config/Sample-Tracking.xml"
 #define STEADY_DELAY 10
 
-#define ZMIN -100
-#define ZMAX 800
+#define ZMIN -400
+#define ZMAX 400
 
 // OpenNI objects
 xn::Context g_Context;

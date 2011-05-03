@@ -20,8 +20,8 @@
 
 #define MAX_DIST_SQ 100
 #define MAX_DRIFT_DIST_SQ 100
-#define ROT_SPEED 5
-#define RESIZE_SPEED 5
+#define ROT_SPEED 1
+#define RESIZE_SPEED 1
 #define SHAPE_SIZE 50
 
 
