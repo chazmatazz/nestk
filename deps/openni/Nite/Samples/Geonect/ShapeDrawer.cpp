@@ -18,7 +18,7 @@
 #include "Cone.h"
 #include "Ellipsoid.h"
 
-#define ROTATE_SPEED 1
+#define ROTATE_SPEED .5
 #define RESIZE_SPEED 1
 #define SHAPE_SIZE 70
 

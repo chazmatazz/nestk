@@ -596,7 +596,7 @@ void glInit (int * pargc, char ** argv)
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
 	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
 	glutCreateWindow ("Geonect");
-    //glutFullScreen();
+    glutFullScreen();
 	glutSetCursor(GLUT_CURSOR_NONE);
 
     glClearColor(0, 0, 0, 0);
@@ -615,6 +615,7 @@ void glInit (int * pargc, char ** argv)
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
     
+    /*
     glEnable( GL_LIGHTING );
     GLfloat diffuseLight[] = { 1, 1, 1, 1.0 };	/// RGBA, vary the 3 first paramaters to change the light color and intensity.   
     glLightfv( GL_LIGHT0, GL_DIFFUSE, diffuseLight );	/// Create the light source
@@ -632,7 +633,7 @@ void glInit (int * pargc, char ** argv)
     glLightfv( GL_LIGHT0, GL_SPECULAR, specularLight );
     glMaterialfv( GL_FRONT, GL_SPECULAR, spectre );
     glMateriali( GL_FRONT, GL_SHININESS, 128 );
-
+    */
     texture[TRANSLATE] = LoadTextureRAW("../../../textures/translate.raw", 0);
     texture[ROTATE] = LoadTextureRAW("../../../textures/rotate.raw", 0);
     texture[STRETCH] = LoadTextureRAW("../../../textures/stretch.raw", 0);
