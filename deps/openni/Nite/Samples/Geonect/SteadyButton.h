@@ -1,25 +1,3 @@
-/****************************************************************************
-*                                                                           *
-*   Nite 1.3 - Boxes                                                        *
-*                                                                           *
-*   Author:     Oz Magal                                                    *
-*                                                                           *
-****************************************************************************/
-
-/****************************************************************************
-*                                                                           *
-*   Nite 1.3	                                                            *
-*   Copyright (C) 2006 PrimeSense Ltd. All Rights Reserved.                 *
-*                                                                           *
-*   This file has been provided pursuant to a License Agreement containing  *
-*   restrictions on its use. This data contains valuable trade secrets      *
-*   and proprietary information of PrimeSense Ltd. and is protected by law. *
-*                                                                           *
-****************************************************************************
- 
-*/
-
-
 #ifndef STEADY_BUTTON_H
 #define STEADY_BUTTON_H
 
@@ -27,11 +5,11 @@
 #include "common.h"
 
 // A class for the button.
-// It is a broadcaster, with its internal push detector and flow manager connected to it.
-// The push detector allows detecting pushes regardless of is state (as long as it's active),
-// and the flow manager is connected to either the swipe detector of the steady detector.
-// This results in a button that responds to pushes (and raises the Leave event), and to swipes and steadys,
-// in turn, which effect some internal state, which is reflected in the drawing.
+// It is a broadcaster, with its internal steady detector and flow manager 
+// connected to it.  The flow manager is connected to either the swipe detector(dummy) 
+// or the steady detector.  This allows the button to activate steady detection 
+// whenever a hand is being tracked inside its bounding box region.  This raises
+// a select event.
 
 
 class SteadyButton : public XnVPointControl
